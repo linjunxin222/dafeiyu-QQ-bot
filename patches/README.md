@@ -1,6 +1,6 @@
-# AstrBot 媒体识别补丁说明
+# AstrBot 媒体识别与整条语音补丁说明
 
-这个仓库不包含 AstrBot 的完整源码。若要让图片、QQ 表情包和视频关键帧真正进入模型，需要对 AstrBot 4.29.3 做以下三处小改动。
+这个仓库不包含 AstrBot 的完整源码。若要让图片、QQ 表情包和视频关键帧真正进入模型，并让一条回复只发一条语音，需要对 AstrBot 4.29.3 做以下四处小改动。
 
 ## 1. 启用图片输入
 
@@ -34,6 +34,20 @@ NapCat 通常会把商城表情转成 `image` 段。若某些客户端仍发送 
 - 有 `url` 时添加 `Image(file=url)`
 - 有 `summary` 时添加 `Plain(text=summary)`
 - 把 `summary` 拼进 `message_str`
+
+## 4. 一条回复只发一条语音
+
+AstrBot 默认在分段回复后对每个文本段分别调用 TTS，会出现一条回复发好几段语音的问题。
+
+改 `astrbot/core/pipeline/result_decorate/stage.py` 的 `if should_tts and tts_provider:` 分支：
+
+- 把所有可朗读的 `Plain.text` 拼成一整段
+- 只调用一次 `get_audio`
+- 用一个 `Record` 替换原来的多个文本段
+- 保留图片、表情等非文本组件
+- TTS 失败时回退到原文本
+
+详细说明见 [tts_whole_reply.md](tts_whole_reply.md)。
 
 ## 注意
 

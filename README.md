@@ -28,7 +28,7 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 - DeepSeek 对话，支持文字和图片输入
 - QQ 私聊，只允许指定主人
 - 长期记忆（本机 Ollama + bge-m3）：召回 10 条、最近 5 条，关闭自动衰减和自动清理
-- Breeze TTS 2 本机语音：标准普通话、十六七岁少女音，音色 `dafeiyu`，约五条回复一条语音
+- Breeze TTS 2 本机语音：标准普通话、十六七岁少女音，音色 `dafeiyu`，约五条回复一条语音，每次只发一条完整语音
 - 生图：Cloudflare Workers AI `FLUX.1 schnell` 为主，失败自动回退 Pollinations；默认二次元、8 步、1024px
 - 表情包、QQ 空间、个性签名工具
 - 图片识别最长边 2048px；视频消息抽取最多 6 帧关键画面后交给视觉模型

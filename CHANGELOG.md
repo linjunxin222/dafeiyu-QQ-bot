@@ -3,6 +3,7 @@
 ## 2026-10-28
 
 - 接入 Breeze TTS 2 本机语音，默认音色 `dafeiyu`，语音频率约五条回复一次
+- 整条回复只合成一条语音，修复分段回复导致的“一段一段”语音
 - 生图插件 `astrbot_plugin_dafeiyu_imagegen`：Cloudflare Workers AI FLUX 主接口、Pollinations 回退、默认二次元、`/生图` 兜底
 - 图片识别最长边提高到 2048px
 - 长期记忆召回 10 条、最近 5 条，关闭自动衰减和自动清理，上下文窗口 100 条
