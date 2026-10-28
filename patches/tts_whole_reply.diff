@@ -1,0 +1,89 @@
+--- a/astrbot/core/pipeline/result_decorate/stage.py
++++ b/astrbot/core/pipeline/result_decorate/stage.py
+@@ -314,23 +314,26 @@
+                         0, Plain(f"🤔 思考: {reasoning_content}\n\n────\n")
+                     )
+ 
+             if should_tts and tts_provider:
+-                new_chain = []
+-                for comp in result.chain:
+-                    if isinstance(comp, Plain) and len(comp.text) > 1:
+-                        try:
+-                            logger.info(f"TTS request: {comp.text}")
+-                            audio_path = await tts_provider.get_audio(comp.text)
+-                            logger.info(f"TTS result: {audio_path}")
+-                            if not audio_path:
+-                                logger.error(
+-                                    "Failed to convert the message segment to speech "
+-                                    f"because no TTS audio file was found: {comp.text}",
+-                                )
+-                                new_chain.append(comp)
+-                                continue
+-
++                # 整条回复只合成一条语音，避免分段回复把一句话拆成好几段音频。
++                plain_parts = [
++                    comp.text
++                    for comp in result.chain
++                    if isinstance(comp, Plain) and len(comp.text) > 1
++                ]
++                combined_text = "".join(plain_parts).strip()
++                if combined_text:
++                    try:
++                        logger.info(f"TTS request (whole reply): {combined_text}")
++                        audio_path = await tts_provider.get_audio(combined_text)
++                        logger.info(f"TTS result: {audio_path}")
++                        if not audio_path:
++                            logger.error(
++                                "Failed to convert the whole reply to speech "
++                                f"because no TTS audio file was found: {combined_text}",
++                            )
++                        else:
+                             use_file_service = self.ctx.astrbot_config[
+                                 "provider_tts_settings"
+                             ]["use_file_service"]
+                             callback_api_base = self.ctx.astrbot_config[
+@@ -347,24 +350,30 @@
+                                 )
+                                 url = f"{callback_api_base}/api/file/{token}"
+                                 logger.debug(f"Registered: {url}")
+ 
+-                            new_chain.append(
+-                                Record(
+-                                    file=url or audio_path,
+-                                    url=url or audio_path,
+-                                    text=comp.text,
+-                                ),
++                            record = Record(
++                                file=url or audio_path,
++                                url=url or audio_path,
++                                text=combined_text,
+                             )
+-                            if dual_output:
++                            new_chain = []
++                            inserted = False
++                            for comp in result.chain:
++                                if isinstance(comp, Plain) and len(comp.text) > 1:
++                                    if not inserted:
++                                        new_chain.append(record)
++                                        if dual_output:
++                                            new_chain.append(Plain(combined_text))
++                                        inserted = True
++                                    continue
+                                 new_chain.append(comp)
+-                        except Exception:
+-                            logger.error(traceback.format_exc())
+-                            logger.error("TTS failed; sending text instead.")
+-                            new_chain.append(comp)
+-                    else:
+-                        new_chain.append(comp)
+-                result.chain = new_chain
++                            if not inserted:
++                                new_chain.append(record)
++                            result.chain = new_chain
++                    except Exception:
++                        logger.error(traceback.format_exc())
++                        logger.error("TTS failed; sending text instead.")
+ 
+             # 文本转图片
+             elif (
+                 result.use_t2i_ is None and self.ctx.astrbot_config["t2i"]

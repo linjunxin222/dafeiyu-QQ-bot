@@ -129,7 +129,7 @@ api_token=你的 Workers AI Token
 
 图片和 QQ 表情包会作为图片输入交给视觉模型。视频会由 ffmpeg 抽取关键帧并拼成一张图，再交给视觉模型；不会上传完整视频，也不识别视频声音。
 
-媒体支持需要 AstrBot 侧的两个小改动，见 [patches/README.md](patches/README.md)。
+媒体支持需要 AstrBot 侧的两个小改动，见 [patches/README.md](patches/README.md)。整条语音补丁见 [patches/tts_whole_reply.diff](patches/tts_whole_reply.diff)。
 
 ## 许可
 

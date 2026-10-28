@@ -18,4 +18,13 @@ AstrBot 4.29.3 默认先做分段回复，再对每个 `Plain` 段分别调用 T
 
 这样分段回复仍然保留，但命中语音的那一次只发一条完整语音。
 
+完整 unified diff：[tts_whole_reply.diff](tts_whole_reply.diff)
+
+在 AstrBot 源码根目录可以检查/应用：
+
+```powershell
+git apply --check patches/tts_whole_reply.diff
+git apply patches/tts_whole_reply.diff
+```
+
 修改前建议备份 `stage.py`。AstrBot 升级后这个文件可能被覆盖，升级后要重新检查。

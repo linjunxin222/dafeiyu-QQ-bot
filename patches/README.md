@@ -47,7 +47,7 @@ AstrBot 默认在分段回复后对每个文本段分别调用 TTS，会出现�
 - 保留图片、表情等非文本组件
 - TTS 失败时回退到原文本
 
-详细说明见 [tts_whole_reply.md](tts_whole_reply.md)。
+详细说明见 [tts_whole_reply.md](tts_whole_reply.md)，可直接应用 [tts_whole_reply.diff](tts_whole_reply.diff)。
 
 ## 注意
 
