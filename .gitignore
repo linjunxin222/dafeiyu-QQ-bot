@@ -1,0 +1,32 @@
+# local secrets
+后台.txt
+大号QQ.txt
+豆包语音.txt
+deepseek-key.txt
+回答.json
+config.local.*
+*.key
+*.pem
+.env
+.env.*
+
+# runtime
+AstrBot/
+NapCat/
+Ollama/
+logs/
+语音试听/
+.runtime/
+.napcat-webui/
+.qr-viewer/
+
+# generated
+__pycache__/
+*.py[cod]
+*.log
+qrcode.png
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store

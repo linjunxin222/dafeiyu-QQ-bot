@@ -1,0 +1,12 @@
+{
+  "base_url": "http://127.0.0.1:6218",
+  "username_file": "后台.txt",
+  "username_key": "账号",
+  "password_file": "后台.txt",
+  "password_key": "密码",
+  "owner_qq_file": "大号QQ.txt",
+  "memory": "1",
+  "voice": "3",
+  "volc_api_key_file": "豆包语音.txt",
+  "volc_api_key_key": "api key"
+}
