@@ -1,0 +1,42 @@
+name: Bug report
+description: 报告可复现的问题（不要贴密钥、QQ 号、密码或聊天记录）
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先确认不是密钥/登录/网络环境问题。
+        **不要在 Issue 里贴 API Key、Token、QQ 号、后台密码、二维码、聊天记录或私人音频。**
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 实际现象和期望现象
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 尽量给出最小步骤
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: AstrBot / NapCat / 本仓库提交
+  - type: textarea
+    id: logs
+    attributes:
+      label: 脱敏日志
+      description: 删除 Token、QQ 号、路径中的用户名等敏感信息后再贴
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 隐私确认
+      options:
+        - label: 我已删除密钥、QQ 号、密码、聊天记录和私人音频
+          required: true

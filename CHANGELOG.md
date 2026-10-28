@@ -1,0 +1,16 @@
+# Changelog
+
+## 2026-10-28
+
+- 接入 Breeze TTS 2 本机语音，默认音色 `dafeiyu`，语音频率约五条回复一次
+- 生图插件 `astrbot_plugin_dafeiyu_imagegen`：Cloudflare Workers AI FLUX 主接口、Pollinations 回退、默认二次元、`/生图` 兜底
+- 图片识别最长边提高到 2048px
+- 长期记忆召回 10 条、最近 5 条，关闭自动衰减和自动清理，上下文窗口 100 条
+- 看门狗增加 Breeze 健康检查和自动重启
+- 启动器/看门狗增加 NapCat 快速登录、AstrBot 无缓冲日志
+- 补充脱敏的 `settings/pack.json`、Breeze 安装/做声音脚本、生图插件
+- 增加仓库自检、CI、安全策略、贡献说明和 Issue/PR 模板
+
+## 2026-10-27
+
+- 初始脱敏公开版本：AstrBot + NapCat + DeepSeek + 长期记忆 + 表情包 + 视频关键帧

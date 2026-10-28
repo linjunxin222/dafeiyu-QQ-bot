@@ -17,6 +17,10 @@ NapCat/
 Ollama/
 logs/
 语音试听/
+voice/*.mp3
+voice/*.wav
+**/voice/*.mp3
+**/voice/*.wav
 .runtime/
 .napcat-webui/
 .qr-viewer/

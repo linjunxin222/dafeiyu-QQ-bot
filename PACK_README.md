@@ -1,5 +1,7 @@
 # 大肥鱼配置包
 
+> 这是配置包的完整说明。公开仓库只保留脱敏后的设置、代码和脚本文本，不包含个人音频、表情包二进制、运行环境和密钥；`voice/` 里的参考音等需要按说明在本机准备。
+
 把你已经接上 QQ 的 AstrBot 调成「大肥鱼」：她有自己的性格，会发表情包、发语音，记得你说过的事，隔一阵会主动找你，叫她唱歌她会现编歌词唱一段，心情变了会自己改 QQ 签名，主人让她发空间、改签名她也会照做。
 
 这个包里只有我们写的设置和人格。常用插件和表情包是导入时从原作者那里下载的；生图插件在包里，导入时一起安装。
@@ -96,7 +98,7 @@ Breeze 的模型只许研究和非商业使用：自己玩没问题，用它做�
 | `settings/pack.json` | 装哪些插件、每个插件怎么设置、记忆和语音用什么 |
 | `tools/import_dafeiyu.py` | 导入工具本体，通过 AstrBot 后台接口改设置 |
 | `plugins/` | 我们写的五个插件：豆包语音、唱歌（这两个语音选 3 时才装）、改签名、回复防串台、生图，导入工具一起装 |
-| `voice/` | MiMo 克隆音用的参考录音；做 Breeze 声音时的候选和试听存在 `voice/breeze/` |
+| `voice/` | MiMo 克隆音用的参考录音；公开仓库只保留 `README.md`，个人音频需在本机放入，不要提交 |
 
 会装的插件：群聊插话（group_chat_plus）、长期记忆（LivingMemory）、表情包（meme_manager）、QQ 空间（qzone）、QQ 资料（qqprofile）、主动聊天（proactive_chat）。都从 AstrBot 插件市场下载，版权归各自作者。另外五个是配置包自带的：豆包语音（seed_audio_tts）、唱歌（dafeiyu_sing）、改签名（dafeiyu_signature）、回复防串台（dafeiyu_clean，DeepSeek 偶尔会把 `<system_reminder>`、`DSML` 这类内部标签当成回复吐出来，它在发出去之前删掉，聊天记录里也一起清掉）、生图（dafeiyu_imagegen，默认 Cloudflare FLUX，失败自动回退 Pollinations）。表情包从 meme_manager 的资源广场下载（蓝色大肥鱼表情包、DeepSeek 二创表情包），图片版权归各权利人。
 

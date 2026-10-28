@@ -4,6 +4,10 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 
 这个仓库是从本机运行目录整理出来的**脱敏版本**，只保留可分享的配置、人格、插件代码和启动脚本。
 
+[![checks](https://github.com/linjunxin222/dafeiyu-QQ-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/linjunxin222/dafeiyu-QQ-bot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB.svg)](https://www.python.org/)
+
 ## 不包含的内容
 
 为了安全，以下内容没有上传：
@@ -31,6 +35,20 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 - 启动器 + 看门狗，异常退出自动恢复，并监控 Breeze 健康状态
 - 电脑/文件/终端/浏览器能力默认关闭
 
+## 架构
+
+```mermaid
+flowchart LR
+    QQ[QQ 客户端] --> N[NapCat]
+    N -->|OneBot v11 WebSocket| A[AstrBot]
+    A --> D[DeepSeek]
+    A --> O[Ollama / bge-m3]
+    A --> B[Breeze TTS 2]
+    A --> C[Cloudflare FLUX]
+    C -. 失败回退 .-> P[Pollinations]
+    A --> M[长期记忆 / 表情包 / QQ 空间]
+```
+
 ## 目录
 
 ```text
@@ -41,16 +59,33 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 ├─ 使用说明.txt
 ├─ qr.html                       # 本机 QQ 扫码登录页
 ├─ persona/大肥鱼.md            # 人设
+├─ settings/pack.json           # 脱敏后的导入清单
 ├─ plugins/                      # 自定义 AstrBot 插件
-│  └─ astrbot_plugin_dafeiyu_imagegen/  # 生图插件
+│  ├─ astrbot_plugin_dafeiyu_imagegen/  # 生图插件
+│  └─ astrbot_plugin_dafeiyu_sing/      # 唱歌插件
 ├─ tools/import_dafeiyu.py       # 配置导入工具
+├─ tools/breeze/                 # Breeze 安装/做声音工具
 ├─ 回答.example.json             # 回答文件模板，复制为 回答.json 后填写
 ├─ 图片API.txt.example           # Cloudflare 生图凭证模板
+├─ 装Breeze语音.bat / 做声音.bat / 导入大肥鱼.bat
 ├─ docs/SETUP.md                 # 安装步骤
 ├─ patches/                      # 媒体识别所需的 AstrBot 侧改动说明
-├─ PACK_README.md                # 原配置包说明
+├─ PACK_README.md                # 配置包说明
+├─ SECURITY.md                   # 安全策略
+├─ CONTRIBUTING.md               # 贡献说明
+├─ CHANGELOG.md
 └─ LICENSE
 ```
+
+## 仓库自检
+
+提交前可以运行：
+
+```bash
+python tools/check_repo.py
+```
+
+它会检查 Python 语法、JSON、插件 metadata、是否误提交密钥/日志/音频/记忆库等。GitHub Actions 也会在 push 和 PR 时跑同样的检查。
 
 ## 快速开始
 
