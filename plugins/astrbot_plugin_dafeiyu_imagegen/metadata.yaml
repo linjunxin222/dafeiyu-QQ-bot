@@ -1,0 +1,8 @@
+name: astrbot_plugin_dafeiyu_imagegen
+display_name: 大肥鱼生图
+desc: 用 FLUX 给大肥鱼加生图能力，生成后直接把图片发到 QQ
+help: 跟她说「画一张……」「给我生一张图」；她会调用 generate_image 并把图发过来
+version: v0.1.0
+author: dafeiyu
+support_platforms:
+  - aiocqhttp

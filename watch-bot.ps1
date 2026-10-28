@@ -32,7 +32,7 @@ function Start-AstrBot {
     $env:ASTRBOT_ROOT = Join-Path $base "AstrBot"
     $env:PYTHONUTF8 = "1"
     $env:PYTHONIOENCODING = "utf-8"
-    Start-Process -FilePath $py -ArgumentList "main.py" -WorkingDirectory $app `
+    Start-Process -FilePath $py -ArgumentList @("-u", "main.py") -WorkingDirectory $app `
         -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden | Out-Null
     Log-Message "watchdog started AstrBot"
 }
@@ -59,9 +59,20 @@ function Stop-AstrBot {
 
 function Start-NapCat {
     $dir = Join-Path $base "NapCat\NapCat.52230.Shell"
-    Start-Process -FilePath (Join-Path $dir "NapCatWinBootMain.exe") `
-        -WorkingDirectory $dir -WindowStyle Hidden | Out-Null
-    Log-Message "watchdog started NapCat"
+    $versionDir = Get-ChildItem -LiteralPath (Join-Path $dir "versions") -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+    $quickAccount = if ($versionDir) {
+        Get-ChildItem -LiteralPath (Join-Path $versionDir.FullName "resources\app\napcat\config") -File -Filter "onebot11_*.json" -ErrorAction SilentlyContinue | Select-Object -First 1
+    }
+    $quickLogin = if ($quickAccount) { $quickAccount.BaseName -replace '^onebot11_', '' } else { "" }
+    if ($quickLogin) {
+        Start-Process -FilePath (Join-Path $dir "NapCatWinBootMain.exe") -ArgumentList @($quickLogin) `
+            -WorkingDirectory $dir -WindowStyle Hidden | Out-Null
+        Log-Message "watchdog started NapCat with saved quick login"
+    } else {
+        Start-Process -FilePath (Join-Path $dir "NapCatWinBootMain.exe") `
+            -WorkingDirectory $dir -WindowStyle Hidden | Out-Null
+        Log-Message "watchdog started NapCat; QR may be required"
+    }
 }
 
 function Start-Ollama {
@@ -72,6 +83,30 @@ function Start-Ollama {
     }
 }
 
+function Start-Breeze {
+    $cmd = "D:\breeze-tts\start-breeze.cmd"
+    if (-not (Test-Path -LiteralPath $cmd)) { return }
+    if (Test-Http "http://127.0.0.1:8137/v1/voices") {
+        $script:breezeFailures = 0
+        return
+    }
+    $running = @(Get-CimInstance Win32_Process | Where-Object { $_.Name -eq "breeze-server.exe" })
+    if (-not $running) {
+        Start-Process -FilePath $cmd -WorkingDirectory "D:\breeze-tts" -WindowStyle Hidden | Out-Null
+        Log-Message "watchdog started Breeze"
+        $script:breezeFailures = 0
+        return
+    }
+    $script:breezeFailures++
+    if ($script:breezeFailures -ge 3) {
+        $running | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        Start-Sleep -Seconds 2
+        Start-Process -FilePath $cmd -WorkingDirectory "D:\breeze-tts" -WindowStyle Hidden | Out-Null
+        Log-Message "watchdog restarted unresponsive Breeze"
+        $script:breezeFailures = 0
+    }
+}
+
 $mutex = New-Object System.Threading.Mutex($false, "Local\dafeiyu_bot_watchdog")
 if (-not $mutex.WaitOne(0)) {
     exit
@@ -79,6 +114,7 @@ if (-not $mutex.WaitOne(0)) {
 
 Log-Message "watchdog started"
 $astrBotFailures = 0
+$breezeFailures = 0
 
 try {
     while ($true) {
@@ -109,6 +145,8 @@ try {
             }
             if (-not $ollamaRunning) { Start-Ollama; Start-Sleep -Seconds 8 }
         }
+
+        Start-Breeze
 
         $ws = Get-NetTCPConnection -State Established -LocalPort 6219 -ErrorAction SilentlyContinue
         if (-not $ws) {

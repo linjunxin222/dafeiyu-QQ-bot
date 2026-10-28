@@ -2,7 +2,7 @@
 
 把你已经接上 QQ 的 AstrBot 调成「大肥鱼」：她有自己的性格，会发表情包、发语音，记得你说过的事，隔一阵会主动找你，叫她唱歌她会现编歌词唱一段，心情变了会自己改 QQ 签名，主人让她发空间、改签名她也会照做。
 
-这个包里只有我们写的设置和人格。插件和表情包都是导入时从原作者那里下载的，包里不带别人的东西。
+这个包里只有我们写的设置和人格。常用插件和表情包是导入时从原作者那里下载的；生图插件在包里，导入时一起安装。
 
 ## 用之前
 
@@ -17,7 +17,7 @@
    - 后台账号和密码：就是你登录 AstrBot 网页用的那个。
    - 你的 QQ 号：填你自己的大号。她只把这个号当主人。
    - 记忆：选 1 用本机 Ollama（免费，要先装 Ollama），选 2 用硅基流动（要一个硅基流动的 key），选 0 先不装。
-   - 语音：直接回车就是 3，用豆包 Seed Audio（要火山引擎豆包语音的 APP ID 和 Access Token，按语音时长约 1 元/分钟，整条回复合成一条语音，要等 15–35 秒）；选 4 用本机的 Breeze（免费，声音想要什么样就做什么样，要先装好，见下面「本机语音 Breeze」）；选 1 用微软 Edge 的免费女声，选 2 用小米 MiMo 克隆音（要 MiMo 的 key），选 0 先不开。
+   - 语音：直接回车就是 4，用本机的 Breeze（免费，要先装好、做好 `dafeiyu` 音色）；选 3 用豆包 Seed Audio（要火山引擎豆包语音的 APP ID 和 Access Token，按语音时长约 1 元/分钟，整条回复合成一条语音）；选 1 用微软 Edge 的免费女声，选 2 用小米 MiMo 克隆音（要 MiMo 的 key），选 0 先不开。
 4. 等它跑完，最后会列出每一项有没有成功。第一次要下载插件和几百张表情包，几分钟。
 5. 去 QQ 上给她发一句「在吗」。之前跟她聊过的话，先发 `/reset` 清掉旧对话。
 
@@ -50,13 +50,11 @@ Breeze 的模型只许研究和非商业使用：自己玩没问题，用它做�
      "password_file": "D:\\大肥鱼\\后台.txt", "password_key": "密码",
      "owner_qq_file": "D:\\大肥鱼\\大号QQ.txt",
      "memory": "0",
-     "voice": "3",
-     "volc_app_id_file": "D:\\大肥鱼\\豆包语音.txt", "volc_app_id_key": "app id",
-     "volc_access_token_file": "D:\\大肥鱼\\豆包语音.txt", "volc_access_token_key": "access token"
+     "voice": "4"
    }
    ```
 
-   `base_url` 填后台网页的地址。记忆选 2 要加 `siliconflow_key_file`，语音选 2 要加 `mimo_key_file`；语音选 4 不用 key，但要先装好 Breeze、做好声音（做声音是一问一答，让人自己双击 `做声音.bat`）。重跑时每一项都按这个文件来：记忆、语音要填现在在用的那个，填 0 会把已经开着的记忆或语音关掉。
+   `base_url` 填后台网页的地址。记忆选 2 要加 `siliconflow_key_file`，语音选 2 要加 `mimo_key_file`；语音选 3 要加 `volc_app_id_file`、`volc_access_token_file`；语音选 4 不用 key，但要先装好 Breeze、做好声音（做声音是一问一答，让人自己双击 `做声音.bat`）。重跑时每一项都按这个文件来：记忆、语音要填现在在用的那个，填 0 会把已经开着的记忆或语音关掉。
 2. 在配置包文件夹里，用 AstrBot 自带的 Python 跑：`%USERPROFILE%\.astrbot_launcher\instances\<实例文件夹>\venv\Scripts\python.exe -X utf8 tools\import_dafeiyu.py --answers 回答.json`。启动器「高级」里改过数据目录的，把 `%USERPROFILE%\.astrbot_launcher` 换成那个目录。
 3. 看最后的结果列表，有打叉的照那一行的提示处理，再跑一次。
 
@@ -72,7 +70,7 @@ Breeze 的模型只许研究和非商业使用：自己玩没问题，用它做�
 
 **两套表情包**：默认蓝色大肥鱼和 DeepSeek 二创两套一起用，发图时从两套里一起挑。只想用一套，把 `settings/pack.json` 里 `meme_packs` 那套的 `use` 改成 `false`，再导入一次。
 
-**语音太多或太少**：改 `settings/pack.json` 里 `voice` 的 `trigger_probability`。0.33 是大约三条一次语音，1 是每条都发语音，0.1 是偶尔一次。
+**语音太多或太少**：改 `settings/pack.json` 里 `voice` 的 `trigger_probability`。0.2 是大约五条一次语音，0.33 大约三条一次，1 是每条都发语音，0.1 是偶尔一次。
 
 **换个声音**：Edge 的声音在 `voice.edge.voice`，比如换成 `zh-CN-XiaoxiaoNeural`。用 MiMo 克隆音的话，把一段 5–10 秒、只有一个人说话的干净录音放进 `voice` 文件夹，重新导入时选 2。用豆包的话，声音是靠一句话描述出来的，改 `voice.doubao.persona`（比如「二十出头的女生，说话直爽利落」），重新导入时选 3。用 Breeze 的话，再双击一次 `做声音.bat` 就行。
 
@@ -97,10 +95,10 @@ Breeze 的模型只许研究和非商业使用：自己玩没问题，用它做�
 | `persona/大肥鱼.md` | 她的人格 |
 | `settings/pack.json` | 装哪些插件、每个插件怎么设置、记忆和语音用什么 |
 | `tools/import_dafeiyu.py` | 导入工具本体，通过 AstrBot 后台接口改设置 |
-| `plugins/` | 我们写的四个插件：豆包语音、唱歌（这两个语音选 3 时才装）、改签名、回复防串台，导入工具一起装 |
+| `plugins/` | 我们写的五个插件：豆包语音、唱歌（这两个语音选 3 时才装）、改签名、回复防串台、生图，导入工具一起装 |
 | `voice/` | MiMo 克隆音用的参考录音；做 Breeze 声音时的候选和试听存在 `voice/breeze/` |
 
-会装的插件：群聊插话（group_chat_plus）、长期记忆（LivingMemory）、表情包（meme_manager）、QQ 空间（qzone）、QQ 资料（qqprofile）、主动聊天（proactive_chat）。都从 AstrBot 插件市场下载，版权归各自作者。另外四个是配置包自带的：豆包语音（seed_audio_tts）、唱歌（dafeiyu_sing）、改签名（dafeiyu_signature）、回复防串台（dafeiyu_clean，DeepSeek 偶尔会把 `<system_reminder>`、`DSML` 这类内部标签当成回复吐出来，它在发出去之前删掉，聊天记录里也一起清掉）。表情包从 meme_manager 的资源广场下载（蓝色大肥鱼表情包、DeepSeek 二创表情包），图片版权归各权利人。
+会装的插件：群聊插话（group_chat_plus）、长期记忆（LivingMemory）、表情包（meme_manager）、QQ 空间（qzone）、QQ 资料（qqprofile）、主动聊天（proactive_chat）。都从 AstrBot 插件市场下载，版权归各自作者。另外五个是配置包自带的：豆包语音（seed_audio_tts）、唱歌（dafeiyu_sing）、改签名（dafeiyu_signature）、回复防串台（dafeiyu_clean，DeepSeek 偶尔会把 `<system_reminder>`、`DSML` 这类内部标签当成回复吐出来，它在发出去之前删掉，聊天记录里也一起清掉）、生图（dafeiyu_imagegen，默认 Cloudflare FLUX，失败自动回退 Pollinations）。表情包从 meme_manager 的资源广场下载（蓝色大肥鱼表情包、DeepSeek 二创表情包），图片版权归各权利人。
 
 ## 安全
 

@@ -38,12 +38,15 @@
 大号QQ.txt
   你的 QQ 号
 
-豆包语音.txt
-  api key: 你的豆包语音 API Key
+图片API.txt
+  account_id=你的 Cloudflare Account ID
+  api_token=你的 Workers AI API Token
 
 deepseek-key.txt
   你的 DeepSeek API Key
 ```
+
+如果语音选豆包（`voice` 为 `3`），再创建 `豆包语音.txt`。用默认的 Breeze（`voice` 为 `4`）不需要豆包凭证。
 
 这些文件已被 `.gitignore` 排除。
 
@@ -55,7 +58,7 @@ Copy-Item .\回答.example.json .\回答.json
 python .\tools\import_dafeiyu.py
 ```
 
-导入工具会通过 AstrBot 后台 API 写入人格、插件、记忆和语音配置。不要在没有确认的情况下重跑导入，否则可能覆盖本机配置。
+导入工具会通过 AstrBot 后台 API 写入人格、插件、记忆和语音配置。`回答.example.json` 默认 `voice` 是 `4`，也就是本机 Breeze；要先用 `PACK_README.md` 的「本机语音 Breeze」装好并做好 `dafeiyu` 音色。不要在没有确认的情况下重跑导入，否则可能覆盖本机配置。
 
 ## 6. 启动
 
@@ -73,6 +76,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-bot.ps1
 - 本机 6219 端口有已建立的 WebSocket 连接
 - 用管理员 QQ 私聊机器人，确认能收到文字回复
 - 发一张图片和一段短视频，确认视觉识别正常
+- 发“画一张蓝鲸女仆”，确认能收到生图；没有 Cloudflare 凭证时会回退 Pollinations
 
 ## 媒体补丁
 

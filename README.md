@@ -8,7 +8,7 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 
 为了安全，以下内容没有上传：
 
-- DeepSeek / 豆包 API Key
+- DeepSeek / 豆包 API Key、Cloudflare Account ID / API Token
 - 机器人 QQ 号、主人 QQ 号
 - AstrBot 后台账号和密码
 - OneBot / NapCat 的 token
@@ -23,26 +23,29 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 
 - DeepSeek 对话，支持文字和图片输入
 - QQ 私聊，只允许指定主人
-- 长期记忆（本机 Ollama + bge-m3）
-- 豆包 Seed TTS 2.0 语音，甜美桃子音色，语速 -5%
+- 长期记忆（本机 Ollama + bge-m3）：召回 10 条、最近 5 条，关闭自动衰减和自动清理
+- Breeze TTS 2 本机语音：标准普通话、十六七岁少女音，音色 `dafeiyu`，约五条回复一条语音
+- 生图：Cloudflare Workers AI `FLUX.1 schnell` 为主，失败自动回退 Pollinations；默认二次元、8 步、1024px
 - 表情包、QQ 空间、个性签名工具
-- 视频消息抽取最多 6 帧关键画面后交给视觉模型
-- 启动器 + 看门狗，异常退出自动恢复
+- 图片识别最长边 2048px；视频消息抽取最多 6 帧关键画面后交给视觉模型
+- 启动器 + 看门狗，异常退出自动恢复，并监控 Breeze 健康状态
 - 电脑/文件/终端/浏览器能力默认关闭
 
 ## 目录
 
 ```text
 .
-├─ start-bot.ps1                 # 后台启动 AstrBot + NapCat，并启动看门狗
-├─ watch-bot.ps1                 # 看门狗，自动恢复 AstrBot / NapCat / Ollama
+├─ start-bot.ps1                 # 后台启动 Breeze + AstrBot + NapCat，并启动看门狗
+├─ watch-bot.ps1                 # 看门狗，自动恢复 AstrBot / NapCat / Ollama / Breeze
 ├─ 启动机器人.bat                # 调用 start-bot.ps1 的入口
 ├─ 使用说明.txt
 ├─ qr.html                       # 本机 QQ 扫码登录页
 ├─ persona/大肥鱼.md            # 人设
 ├─ plugins/                      # 自定义 AstrBot 插件
+│  └─ astrbot_plugin_dafeiyu_imagegen/  # 生图插件
 ├─ tools/import_dafeiyu.py       # 配置导入工具
 ├─ 回答.example.json             # 回答文件模板，复制为 回答.json 后填写
+├─ 图片API.txt.example           # Cloudflare 生图凭证模板
 ├─ docs/SETUP.md                 # 安装步骤
 ├─ patches/                      # 媒体识别所需的 AstrBot 侧改动说明
 ├─ PACK_README.md                # 原配置包说明
@@ -57,14 +60,32 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 2. 安装 NapCat 9.9.33-52230，放在 `NapCat/NapCat.52230.Shell`。
 3. 从同版本 QQNT 安装目录复制 `QQEX.exe` 到 NapCat Shell 根目录。
 4. 安装 Ollama，拉取 `bge-m3`，设置 `OLLAMA_MODELS` 和 CPU 模式。
-5. 在本机创建密钥文件，不要把密钥提交到仓库。
-6. 复制 `回答.example.json` 为 `回答.json`，填写本机文件路径。
-7. 运行 `python tools/import_dafeiyu.py`。
-8. 双击 `启动机器人.bat`，按提示扫码登录 QQ。
+5. 安装 Breeze TTS 2（见 `PACK_README.md` 的「本机语音 Breeze」），做好音色 `dafeiyu`。
+6. 在本机创建密钥文件，不要把密钥提交到仓库。
+7. 复制 `回答.example.json` 为 `回答.json`，默认 `voice` 是 `4`（Breeze）；填写本机文件路径。
+8. 运行 `python tools/import_dafeiyu.py`。
+9. 可选：复制 `图片API.txt.example` 为 `图片API.txt`，填 Cloudflare Account ID 和 Workers AI Token。
+10. 双击 `启动机器人.bat`，按提示扫码登录 QQ。
+
+## 生图
+
+`astrbot_plugin_dafeiyu_imagegen` 提供两个入口：
+
+- 正常聊天里说「画一张……」「给我生一张图」，模型调用 `generate_image`
+- 兜底命令：`/生图 一只蓝鲸女仆`
+
+Cloudflare Workers AI 的免费额度是每天 10,000 Neurons；失败或没配置凭证时会自动回退 Pollinations。免费 FLUX 偶尔会有手部、眼睛小瑕疵，要商用稳定度需要换更强的付费模型。
+
+生图凭证放在 `图片API.txt`，已被 `.gitignore` 排除，**不要提交**：
+
+```text
+account_id=你的 Cloudflare Account ID
+api_token=你的 Workers AI Token
+```
 
 ## 安全说明
 
-- 这是公开仓库，**绝对不要**把真实 Key、QQ 号、后台密码、Cookie 或聊天记录提交上来。
+- 这是公开仓库，**绝对不要**把真实 Key、QQ 号、后台密码、Cookie、Cloudflare Token 或聊天记录提交上来。
 - `start-bot.ps1` 和 `watch-bot.ps1` 使用相对路径，默认从脚本所在目录启动。
 - 机器人默认只允许管理员私聊；群聊和其他 QQ 会被拦截。
 - 电脑操作、文件、终端、浏览器工具仍然关闭。
@@ -77,4 +98,4 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 
 ## 许可
 
-配置包部分沿用原仓库的 MIT License，见 `LICENSE`。AstrBot、NapCat、QQ、Ollama 和豆包服务分别遵循它们自己的许可与服务条款。
+配置包部分沿用原仓库的 MIT License，见 `LICENSE`。AstrBot、NapCat、QQ、Ollama、Breeze 和豆包服务分别遵循它们自己的许可与服务条款。Breeze 模型只允许研究和非商业使用。

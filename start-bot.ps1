@@ -25,6 +25,24 @@ function Test-AstrBotHttp {
     }
 }
 
+$breezeCmd = "D:\breeze-tts\start-breeze.cmd"
+if (Test-Path -LiteralPath $breezeCmd) {
+    try {
+        $breezeHttp = (Invoke-WebRequest -Uri "http://127.0.0.1:8137/v1/voices" -UseBasicParsing -TimeoutSec 2).StatusCode -eq 200
+    } catch {
+        $breezeHttp = $false
+    }
+    if (-not $breezeHttp) {
+        $breezeRunning = @(Get-CimInstance Win32_Process | Where-Object { $_.Name -eq "breeze-server.exe" })
+        if ($breezeRunning) {
+            $breezeRunning | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+            Start-Sleep -Seconds 2
+        }
+        Start-Process -FilePath $breezeCmd -WorkingDirectory "D:\breeze-tts" -WindowStyle Hidden | Out-Null
+        Log-Message "Breeze TTS starting..."
+    }
+}
+
 $httpOk = Test-AstrBotHttp
 if (-not $httpOk) {
     $running = Get-CimInstance Win32_Process | Where-Object {
@@ -35,7 +53,7 @@ if (-not $httpOk) {
         $app = Join-Path $base "AstrBot\app"
         $outLog = Join-Path $logs "astrbot.out.log"
         $errLog = Join-Path $logs "astrbot.err.log"
-        Start-Process -FilePath $py -ArgumentList "main.py" -WorkingDirectory $app `
+        Start-Process -FilePath $py -ArgumentList @("-u", "main.py") -WorkingDirectory $app `
             -RedirectStandardOutput $outLog -RedirectStandardError $errLog -WindowStyle Hidden | Out-Null
         Log-Message "AstrBot starting..."
     } else {
@@ -60,9 +78,20 @@ if (-not $ws) {
     }
     if (-not $napcat) {
         $napcatDir = Join-Path $base "NapCat\NapCat.52230.Shell"
-        Start-Process -FilePath (Join-Path $napcatDir "NapCatWinBootMain.exe") `
-            -WorkingDirectory $napcatDir -WindowStyle Hidden | Out-Null
-        Log-Message "NapCat starting..."
+        $versionDir = Get-ChildItem -LiteralPath (Join-Path $napcatDir "versions") -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+        $quickAccount = if ($versionDir) {
+            Get-ChildItem -LiteralPath (Join-Path $versionDir.FullName "resources\app\napcat\config") -File -Filter "onebot11_*.json" -ErrorAction SilentlyContinue | Select-Object -First 1
+        }
+        $quickLogin = if ($quickAccount) { $quickAccount.BaseName -replace '^onebot11_', '' } else { "" }
+        if ($quickLogin) {
+            Start-Process -FilePath (Join-Path $napcatDir "NapCatWinBootMain.exe") -ArgumentList @($quickLogin) `
+                -WorkingDirectory $napcatDir -WindowStyle Hidden | Out-Null
+            Log-Message "NapCat starting with saved quick login..."
+        } else {
+            Start-Process -FilePath (Join-Path $napcatDir "NapCatWinBootMain.exe") `
+                -WorkingDirectory $napcatDir -WindowStyle Hidden | Out-Null
+            Log-Message "NapCat starting; no saved account, QR may be required."
+        }
     } else {
         Log-Message "NapCat process exists, waiting..."
     }

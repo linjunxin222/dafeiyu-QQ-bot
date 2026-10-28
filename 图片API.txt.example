@@ -1,0 +1,10 @@
+# Cloudflare Workers AI 图片生成配置
+# 不要把这个文件提交到公开仓库
+#
+# 登录 https://dash.cloudflare.com/ 后：
+# 1. Workers & Pages / Overview 右侧可看到 Account ID
+# 2. 头像 -> My Profile -> API Tokens -> Create Token
+#    权限选 Workers AI:Read（或 Workers AI:Edit），Account Resources 选你的账号
+# 3. 把下面两项填好并保存
+account_id=
+api_token=
