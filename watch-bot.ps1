@@ -1,4 +1,4 @@
-$ErrorActionPreference = "SilentlyContinue"
+﻿$ErrorActionPreference = "SilentlyContinue"
 $base = $PSScriptRoot
 $logs = Join-Path $base "logs"
 New-Item -ItemType Directory -Path $logs -Force | Out-Null
@@ -149,6 +149,18 @@ function Start-Sing {
     }
 }
 
+function Remove-DuplicateNapCat {
+    $napcat = @(Get-CimInstance Win32_Process | Where-Object {
+        $_.ExecutablePath -like (Join-Path $base "NapCat\*") -and $_.Name -eq "NapCatWinBootMain.exe"
+    })
+    if ($napcat.Count -le 1) { return }
+    $keep = $napcat | Sort-Object CreationDate | Select-Object -First 1
+    $napcat | Where-Object { $_.ProcessId -ne $keep.ProcessId } | ForEach-Object {
+        & "$env:SystemRoot\System32\taskkill.exe" /PID $_.ProcessId /T /F 2>$null | Out-Null
+    }
+    Log-Message "watchdog removed duplicate NapCat processes"
+}
+
 $mutex = New-Object System.Threading.Mutex($false, "Local\dafeiyu_bot_watchdog")
 if (-not $mutex.WaitOne(0)) {
     exit
@@ -191,6 +203,7 @@ try {
 
         Start-Breeze
         Start-Sing
+        Remove-DuplicateNapCat
 
         $ws = Get-NetTCPConnection -State Established -LocalPort 6219 -ErrorAction SilentlyContinue
         if (-not $ws) {

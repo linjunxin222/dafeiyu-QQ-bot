@@ -1,8 +1,16 @@
-$ErrorActionPreference = "SilentlyContinue"
+﻿$ErrorActionPreference = "SilentlyContinue"
 $base = $PSScriptRoot
 $logs = Join-Path $base "logs"
 New-Item -ItemType Directory -Path $logs -Force | Out-Null
 $logFile = Join-Path $logs "launcher.log"
+
+# 防止桌面快捷方式和开机启动同时点，重复拉起 AstrBot/NapCat。
+$launcherLock = $null
+try {
+    $launcherLock = [IO.File]::Open((Join-Path $logs "launcher.lock"), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+} catch {
+    exit
+}
 
 function Log-Message([string]$message) {
     $line = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $message"
@@ -10,21 +18,41 @@ function Log-Message([string]$message) {
     Write-Output $message
 }
 
-Log-Message "=== launcher start ==="
-
-$env:ASTRBOT_ROOT = Join-Path $base "AstrBot"
-$env:PYTHONUTF8 = "1"
-$env:PYTHONIOENCODING = "utf-8"
-
 function Test-AstrBotHttp {
     try {
-        $response = Invoke-WebRequest -Uri "http://127.0.0.1:6218/" -UseBasicParsing -TimeoutSec 3
+        $response = Invoke-WebRequest -Uri "http://127.0.0.1:6218/" -UseBasicParsing -TimeoutSec 2
         return $response.StatusCode -eq 200
     } catch {
         return $false
     }
 }
 
+function Test-QQConnection {
+    return (@(Get-NetTCPConnection -State Established -LocalPort 6219 -ErrorAction SilentlyContinue).Count -gt 0)
+}
+
+function Start-Watchdog {
+    $running = @(Get-CimInstance Win32_Process | Where-Object {
+        $_.CommandLine -match "watch-bot\.ps1"
+    })
+    if ($running.Count -gt 0) { return }
+    $psExe = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+    Start-Process -FilePath $psExe -ArgumentList @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", (Join-Path $base "watch-bot.ps1")
+    ) -WindowStyle Hidden | Out-Null
+    Log-Message "Watchdog starting..."
+}
+
+Log-Message "=== launcher start ==="
+$sw = [Diagnostics.Stopwatch]::StartNew()
+
+$env:ASTRBOT_ROOT = Join-Path $base "AstrBot"
+$env:PYTHONUTF8 = "1"
+$env:PYTHONIOENCODING = "utf-8"
+
+# 1) 语音服务先拉起，不阻塞主流程。
 $breezeCmd = "D:\breeze-tts\start-breeze.cmd"
 if (Test-Path -LiteralPath $breezeCmd) {
     try {
@@ -34,9 +62,9 @@ if (Test-Path -LiteralPath $breezeCmd) {
     }
     if (-not $breezeHttp) {
         $breezeRunning = @(Get-CimInstance Win32_Process | Where-Object { $_.Name -eq "breeze-server.exe" })
-        if ($breezeRunning) {
+        if ($breezeRunning.Count -gt 0) {
             $breezeRunning | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-            Start-Sleep -Seconds 2
+            Start-Sleep -Milliseconds 800
         }
         Start-Process -FilePath $breezeCmd -WorkingDirectory "D:\breeze-tts" -WindowStyle Hidden | Out-Null
         Log-Message "Breeze TTS starting..."
@@ -49,53 +77,57 @@ $singScript = Join-Path $singRoot "sing_server.py"
 $singModel = Join-Path $singRoot "models\SoulX-Singer\model.pt"
 if ((Test-Path -LiteralPath $singPy) -and (Test-Path -LiteralPath $singScript) -and (Test-Path -LiteralPath $singModel)) {
     try {
-        $singHealth = Invoke-RestMethod -Uri "http://127.0.0.1:18620/health" -TimeoutSec 3
+        $singHealth = Invoke-RestMethod -Uri "http://127.0.0.1:18620/health" -TimeoutSec 2
         $singOk = [bool]($singHealth.ok -and ($singHealth.backends -contains "soulx"))
     } catch {
         $singOk = $false
     }
-    if (-not $singOk) {
+    $singRunning = @(Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -eq "python.exe" -and $_.CommandLine -match "sing_server\.py"
+    })
+    if (-not $singOk -and $singRunning.Count -eq 0) {
         Start-Process -FilePath $singPy -ArgumentList @($singScript, "--soulx", (Join-Path $singRoot "SoulX-Singer"), "--model", $singModel) `
             -WorkingDirectory $singRoot -RedirectStandardOutput (Join-Path $logs "sing-server.out.log") `
             -RedirectStandardError (Join-Path $logs "sing-server.err.log") -WindowStyle Hidden | Out-Null
         Log-Message "SoulX singing service starting..."
+    } elseif (-not $singOk) {
+        Log-Message "SoulX singing process exists, waiting..."
     }
 }
 
+# 2) AstrBot 与 NapCat 并行启动，不再等 AstrBot 完全就绪才启动 QQ。
 $httpOk = Test-AstrBotHttp
 if (-not $httpOk) {
-    $running = Get-CimInstance Win32_Process | Where-Object {
+    $astrBotRunning = @(Get-CimInstance Win32_Process | Where-Object {
         $_.ExecutablePath -like (Join-Path $base "AstrBot\*") -and $_.CommandLine -match "main\.py"
-    }
-    if (-not $running) {
+    })
+    if ($astrBotRunning.Count -eq 0) {
         $py = Join-Path $base "AstrBot\venv\Scripts\python.exe"
         $app = Join-Path $base "AstrBot\app"
-        $outLog = Join-Path $logs "astrbot.out.log"
-        $errLog = Join-Path $logs "astrbot.err.log"
         Start-Process -FilePath $py -ArgumentList @("-u", "main.py") -WorkingDirectory $app `
-            -RedirectStandardOutput $outLog -RedirectStandardError $errLog -WindowStyle Hidden | Out-Null
+            -RedirectStandardOutput (Join-Path $logs "astrbot.out.log") `
+            -RedirectStandardError (Join-Path $logs "astrbot.err.log") -WindowStyle Hidden | Out-Null
         Log-Message "AstrBot starting..."
     } else {
         Log-Message "AstrBot process exists, waiting..."
     }
-    for ($i = 0; $i -lt 40; $i++) {
-        Start-Sleep -Seconds 2
-        if (Test-AstrBotHttp) { $httpOk = $true; break }
+}
+
+$napcatRunning = @(Get-CimInstance Win32_Process | Where-Object {
+    $_.ExecutablePath -like (Join-Path $base "NapCat\*") -and $_.Name -eq "NapCatWinBootMain.exe"
+})
+if ($napcatRunning.Count -gt 1) {
+    $keep = $napcatRunning | Sort-Object CreationDate | Select-Object -First 1
+    $napcatRunning | Where-Object { $_.ProcessId -ne $keep.ProcessId } | ForEach-Object {
+        & "$env:SystemRoot\System32\taskkill.exe" /PID $_.ProcessId /T /F 2>$null | Out-Null
     }
+    Log-Message "Removed duplicate NapCat processes; keeping one."
+    $napcatRunning = @($keep)
 }
 
-if ($httpOk) {
-    Log-Message "AstrBot is online."
-} else {
-    Log-Message "AstrBot did not become ready. Check logs\astrbot.err.log."
-}
-
-$ws = Get-NetTCPConnection -State Established -LocalPort 6219 -ErrorAction SilentlyContinue
+$ws = Test-QQConnection
 if (-not $ws) {
-    $napcat = Get-CimInstance Win32_Process | Where-Object {
-        $_.ExecutablePath -like (Join-Path $base "NapCat\*") -and $_.Name -eq "NapCatWinBootMain.exe"
-    }
-    if (-not $napcat) {
+    if ($napcatRunning.Count -eq 0) {
         $napcatDir = Join-Path $base "NapCat\NapCat.52230.Shell"
         $versionDir = Get-ChildItem -LiteralPath (Join-Path $napcatDir "versions") -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
         $quickAccount = if ($versionDir) {
@@ -114,13 +146,23 @@ if (-not $ws) {
     } else {
         Log-Message "NapCat process exists, waiting..."
     }
-    for ($i = 0; $i -lt 20; $i++) {
-        Start-Sleep -Seconds 2
-        $ws = Get-NetTCPConnection -State Established -LocalPort 6219 -ErrorAction SilentlyContinue
-        if ($ws) { break }
-    }
 }
 
+# 3) 看门狗尽早启动，后面的等待期间也能接手异常。
+Start-Watchdog
+
+# 4) 同时等待 AstrBot HTTP 和 QQ WebSocket，最多 50 秒。
+while ($sw.Elapsed.TotalSeconds -lt 50 -and (-not $httpOk -or -not $ws)) {
+    Start-Sleep -Milliseconds 500
+    if (-not $httpOk) { $httpOk = Test-AstrBotHttp }
+    if (-not $ws) { $ws = Test-QQConnection }
+}
+
+if ($httpOk) {
+    Log-Message "AstrBot is online."
+} else {
+    Log-Message "AstrBot did not become ready. Check logs\astrbot.err.log."
+}
 if ($ws) {
     Log-Message "QQ connection is online."
 } else {
@@ -144,17 +186,5 @@ if ($ws) {
     }
 }
 
-$watcherRunning = Get-CimInstance Win32_Process | Where-Object {
-    $_.CommandLine -match "watch-bot\.ps1"
-}
-if (-not $watcherRunning) {
-    $psExe = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
-    Start-Process -FilePath $psExe -ArgumentList @(
-        "-NoProfile",
-        "-ExecutionPolicy", "Bypass",
-        "-File", (Join-Path $base "watch-bot.ps1")
-    ) -WindowStyle Hidden | Out-Null
-    Log-Message "Watchdog starting..."
-}
-
-Start-Sleep -Seconds 2
+Log-Message ("=== launcher done in {0:N1}s (astrbot={1}, qq={2}) ===" -f $sw.Elapsed.TotalSeconds, $httpOk, $ws)
+if ($launcherLock) { $launcherLock.Dispose() }

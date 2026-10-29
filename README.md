@@ -33,7 +33,7 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 - 生图：Cloudflare Workers AI `FLUX.1 schnell` 为主，失败自动回退 Pollinations；默认二次元、8 步、1024px
 - 表情包、QQ 空间、个性签名工具
 - 图片识别最长边 2048px；视频消息抽取最多 6 帧关键画面后交给视觉模型
-- 启动器 + 看门狗，异常退出自动恢复，并监控 Breeze 和 SoulX 健康状态
+- 启动器 + 看门狗：Breeze/SoulX/AstrBot/NapCat 并行启动，控制台隐藏，开机自启；启动互斥和单实例保护，异常退出自动恢复
 - 电脑/文件/终端/浏览器能力默认关闭
 
 ## 架构

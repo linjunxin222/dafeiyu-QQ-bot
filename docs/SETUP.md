@@ -80,7 +80,9 @@ python .\tools\import_dafeiyu.py
 powershell -NoProfile -ExecutionPolicy Bypass -File .\start-bot.ps1
 ```
 
-如果 NapCat 登录态失效，启动器会打开 `qr.html` 对应的扫码页。
+启动器会同时拉起 Breeze、SoulX、AstrBot 和 NapCat；AstrBot 与 NapCat 并行启动，控制台隐藏。桌面快捷方式和开机启动都指向同一个脚本，重复双击不会重复启动；看门狗会清理重复的 NapCat 进程，避免两个实例互相顶号。
+
+如果 NapCat 登录态失效，启动器会打开 `qr.html` 对应的扫码页。只有登录态真正失效时才需要扫码，不要把机器人 QQ 同时登在别的设备上。
 
 ## 8. 验证
 
