@@ -31,6 +31,7 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 - 识海：本机 `D:\大肥鱼\识海` 保存自我、主人、时间线、带来源/可信度的事实和未完成约定；每轮只注入小段核心，每天 04:00 去重整理并备份
 - Breeze TTS 2 本机语音：标准普通话、十六七岁少女音，音色 `dafeiyu`，约十条回复一条语音，每次只发一条完整语音
 - 唱歌：本机 SoulX-Singer 按谱唱，支持《小星星》《两只老虎》《生日快乐》，约 10–30 秒
+- 翻唱：发干净人声/清唱并说「翻唱」，用本机 SoulX-SVC 转成大肥鱼音色；本地歌曲库支持找歌
 - 生图：Cloudflare Workers AI `FLUX.1 schnell` 为主，失败自动回退 Pollinations；默认二次元、8 步、1024px
 - 表情包、QQ 空间、个性签名工具
 - QQ 原生小黄脸：`send_qq_face`；本地梗图：`search_memes`
@@ -68,7 +69,8 @@ flowchart LR
 │  ├─ astrbot_plugin_dafeiyu_imagegen/  # 生图插件
 │  ├─ astrbot_plugin_dafeiyu_sing/      # 唱歌插件
 │  ├─ astrbot_plugin_dafeiyu_face/      # QQ 原生小黄脸
-│  └─ astrbot_plugin_dafeiyu_shihai/    # 识海
+│  ├─ astrbot_plugin_dafeiyu_shihai/    # 识海
+│  └─ astrbot_plugin_dafeiyu_cover/     # SVC 翻唱
 ├─ tools/import_dafeiyu.py       # 配置导入工具
 ├─ tools/breeze/                 # Breeze 安装/做声音工具
 ├─ 回答.example.json             # 回答文件模板，复制为 回答.json 后填写

@@ -1,0 +1,8 @@
+name: astrbot_plugin_dafeiyu_cover
+display_name: 大肥鱼翻唱
+desc: 发音频或清唱给大肥鱼，用 SoulX-SVC 转成大肥鱼音色；支持本地歌曲库找歌
+help: 发音频并说「翻唱」；或说「找歌 歌名」「唱 歌名」
+version: v0.1.0
+author: zexuan604
+support_platforms:
+  - aiocqhttp
