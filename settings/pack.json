@@ -60,8 +60,11 @@
       "what": "长期记忆，需要先选一种记忆方式",
       "config": {
         "provider_settings.llm_provider_id": "{对话模型}",
-        "session_manager.context_window_size": 50,
-        "reflection_engine.summary_trigger_rounds": 10
+        "session_manager.context_window_size": 70,
+        "reflection_engine.summary_trigger_rounds": 8,
+        "recall_engine.top_k": 6,
+        "recall_engine.recent_memory_count": 3,
+        "agent_tools.enable_memorize_tool": true
       }
     },
     {
