@@ -4,6 +4,7 @@ import io
 import json
 import os
 import random
+import subprocess
 import time
 import uuid
 from pathlib import Path
@@ -11,7 +12,7 @@ from urllib.parse import quote
 
 import aiohttp
 from PIL import Image as PILImage
-from PIL import ImageOps, ImageStat
+from PIL import ImageFilter, ImageOps, ImageStat
 
 import astrbot.api.message_components as Comp
 from astrbot import logger
@@ -21,6 +22,13 @@ from astrbot.core.utils.astrbot_path import get_astrbot_temp_path
 
 CF_FILE = Path(r"D:\大肥鱼\图片API.txt")
 CF_MODEL = "@cf/black-forest-labs/flux-1-schnell"
+WAIFU2X_DIR = Path(r"D:\大肥鱼\tools\waifu2x\waifu2x-ncnn-vulkan-20250915-windows")
+WAIFU2X_EXE = WAIFU2X_DIR / "waifu2x-ncnn-vulkan.exe"
+WAIFU2X_MODEL = WAIFU2X_DIR / "models-cunet"
+NEGATIVE_PROMPT = (
+    "lowres, blurry, bad anatomy, bad hands, extra fingers, "
+    "watermark, text, logo, jpeg artifacts, oversaturated"
+)
 ANIME_SUFFIX = (
     ", high-quality Japanese anime illustration, clean lineart, soft cel shading, "
     "beautiful detailed natural anime eyes, delicate face, no heavy makeup, "
@@ -135,6 +143,51 @@ class DafeiyuImageGen(Star):
                 token = value
         return account, token
 
+    @staticmethod
+    def _upscale_image(image: PILImage.Image) -> PILImage.Image:
+        """2x anime upscale with waifu2x-ncnn-vulkan, falling back to CPU."""
+        if not WAIFU2X_EXE.is_file() or not WAIFU2X_MODEL.is_dir():
+            return image
+        token = uuid.uuid4().hex
+        src = os.path.join(get_astrbot_temp_path(), f"dafeiyu_up_{token}_in.png")
+        out = os.path.join(get_astrbot_temp_path(), f"dafeiyu_up_{token}_out.png")
+        try:
+            image.save(src, "PNG")
+            for gpu in ("0", "-1"):
+                if os.path.exists(out):
+                    os.remove(out)
+                cmd = [
+                    str(WAIFU2X_EXE),
+                    "-i", src,
+                    "-o", out,
+                    "-s", "2",
+                    "-n", "0",
+                    "-m", str(WAIFU2X_MODEL),
+                    "-g", gpu,
+                    "-j", "1:2:2",
+                ]
+                proc = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    timeout=90,
+                    creationflags=0x08000000,
+                )
+                if proc.returncode == 0 and os.path.exists(out):
+                    up = PILImage.open(out).convert("RGB")
+                    logger.info("[dafeiyu_imagegen] waifu2x %sx%s -> %sx%s", image.width, image.height, up.width, up.height)
+                    return up
+                logger.warning("[dafeiyu_imagegen] waifu2x gpu=%s failed: %s", gpu, (proc.stderr or b"")[-300:])
+        except Exception as exc:
+            logger.warning("[dafeiyu_imagegen] waifu2x failed: %s", exc)
+        finally:
+            for p in (src, out):
+                try:
+                    if os.path.exists(p):
+                        os.remove(p)
+                except Exception:
+                    pass
+        return image
+
     async def _send_image(self, event: AstrMessageEvent, data: bytes, width: int, height: int, trim_bottom: bool) -> None:
         image = PILImage.open(io.BytesIO(data)).convert("RGB")
         # FLUX sometimes letterboxes the actual scene with black bars.
@@ -157,6 +210,7 @@ class DafeiyuImageGen(Star):
             w, h = image.size
             image = image.crop((0, 0, w, max(1, h - int(h * 0.045))))
         image = ImageOps.fit(image, (width, height), method=PILImage.LANCZOS)
+        image = await asyncio.to_thread(self._upscale_image, image)
         path = os.path.join(get_astrbot_temp_path(), f"dafeiyu_image_{uuid.uuid4().hex}.jpg")
         image.save(path, "JPEG", quality=92, optimize=True)
         await event.send(MessageChain([Comp.Image.fromFileSystem(path)]))
@@ -206,6 +260,7 @@ class DafeiyuImageGen(Star):
                 "model": model,
                 "nologo": "true",
                 "enhance": "true",
+                "negative_prompt": NEGATIVE_PROMPT,
                 "seed": random.randint(1, 2_000_000_000),
             }
             url = f"https://image.pollinations.ai/prompt/{encoded}"

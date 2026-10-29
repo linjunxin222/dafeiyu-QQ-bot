@@ -11,6 +11,7 @@
 - 识海升级 v0.2.0：事实带时间/来源/可信度，未完成约定跟踪，每天 04:00 去重整理并备份
 - 新增 `astrbot_plugin_dafeiyu_cover`：发音频/清唱说「翻唱」走 SoulX-SVC；本地歌曲库找歌 + iTunes 元数据查询，不自动下载版权歌曲
 - 翻唱支持带伴奏音频：先用 Mel-Band RoFormer 分离主唱，再做 SVC
+- 生图输出加 waifu2x 2x（1024 → 2048）和 Pollinations 负面提示词
 
 ## 2026-10-28
 
