@@ -7,6 +7,7 @@
 - 启动器合并 Breeze/SoulX/AstrBot/NapCat，并行启动、开机自启；增加启动互斥和 NapCat 单实例保护，修复重复实例互相顶号导致的频繁扫码
 - 新增 `astrbot_plugin_dafeiyu_face`：`send_qq_face` 发送 QQ 原生小黄脸，本地梗图继续走 `search_memes`
 - 语音触发频率从 0.2 降到 0.1；人格加入一点傲娇，被夸先嘴硬再露出在意，一次回复最多一处
+- 新增 `astrbot_plugin_dafeiyu_shihai`：本机识海，保存自我、主人、时间线、事实和语气，每轮注入小段核心
 
 ## 2026-10-28
 

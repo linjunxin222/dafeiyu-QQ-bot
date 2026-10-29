@@ -28,6 +28,7 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 - DeepSeek 对话，支持文字和图片输入
 - QQ 私聊，只允许指定主人
 - 长期记忆（本机 Ollama + bge-m3）：召回 6 条、最近 3 条，关闭自动衰减和自动清理；支持主动 `memorize_long_term_memory` 记录重要事实
+- 识海：本机 `D:\大肥鱼\识海` 保存自我、主人、时间线、事实和语气；每轮只注入小段核心，换模型/重启后仍保留连续性
 - Breeze TTS 2 本机语音：标准普通话、十六七岁少女音，音色 `dafeiyu`，约十条回复一条语音，每次只发一条完整语音
 - 唱歌：本机 SoulX-Singer 按谱唱，支持《小星星》《两只老虎》《生日快乐》，约 10–30 秒
 - 生图：Cloudflare Workers AI `FLUX.1 schnell` 为主，失败自动回退 Pollinations；默认二次元、8 步、1024px
@@ -66,7 +67,8 @@ flowchart LR
 ├─ plugins/                      # 自定义 AstrBot 插件
 │  ├─ astrbot_plugin_dafeiyu_imagegen/  # 生图插件
 │  ├─ astrbot_plugin_dafeiyu_sing/      # 唱歌插件
-│  └─ astrbot_plugin_dafeiyu_face/      # QQ 原生小黄脸
+│  ├─ astrbot_plugin_dafeiyu_face/      # QQ 原生小黄脸
+│  └─ astrbot_plugin_dafeiyu_shihai/    # 识海
 ├─ tools/import_dafeiyu.py       # 配置导入工具
 ├─ tools/breeze/                 # Breeze 安装/做声音工具
 ├─ 回答.example.json             # 回答文件模板，复制为 回答.json 后填写

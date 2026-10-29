@@ -97,10 +97,10 @@ Breeze 的模型只许研究和非商业使用：自己玩没问题，用它做�
 | `persona/大肥鱼.md` | 她的人格 |
 | `settings/pack.json` | 装哪些插件、每个插件怎么设置、记忆和语音用什么 |
 | `tools/import_dafeiyu.py` | 导入工具本体，通过 AstrBot 后台接口改设置 |
-| `plugins/` | 我们写的插件：豆包语音、唱歌（这两个语音选 3 时才装）、改签名、回复防串台、生图、QQ 原生小黄脸，导入工具一起装 |
+| `plugins/` | 我们写的插件：豆包语音、唱歌（这两个语音选 3 时才装）、改签名、回复防串台、生图、QQ 原生小黄脸、识海，导入工具一起装 |
 | `voice/` | MiMo 克隆音用的参考录音；公开仓库只保留 `README.md`，个人音频需在本机放入，不要提交 |
 
-会装的插件：群聊插话（group_chat_plus）、长期记忆（LivingMemory）、表情包（meme_manager）、QQ 空间（qzone）、QQ 资料（qqprofile）、主动聊天（proactive_chat）。都从 AstrBot 插件市场下载，版权归各自作者。另外六个是配置包自带的：豆包语音（seed_audio_tts）、唱歌（dafeiyu_sing）、改签名（dafeiyu_signature）、回复防串台（dafeiyu_clean，DeepSeek 偶尔会把 `<system_reminder>`、`DSML` 这类内部标签当成回复吐出来，它在发出去之前删掉，聊天记录里也一起清掉）、生图（dafeiyu_imagegen，默认 Cloudflare FLUX，失败自动回退 Pollinations）、QQ 原生小黄脸（dafeiyu_face）。表情包从 meme_manager 的资源广场下载（蓝色大肥鱼表情包、DeepSeek 二创表情包），图片版权归各权利人。
+会装的插件：群聊插话（group_chat_plus）、长期记忆（LivingMemory）、表情包（meme_manager）、QQ 空间（qzone）、QQ 资料（qqprofile）、主动聊天（proactive_chat）。都从 AstrBot 插件市场下载，版权归各自作者。另外七个是配置包自带的：豆包语音（seed_audio_tts）、唱歌（dafeiyu_sing）、改签名（dafeiyu_signature）、回复防串台（dafeiyu_clean，DeepSeek 偶尔会把 `<system_reminder>`、`DSML` 这类内部标签当成回复吐出来，它在发出去之前删掉，聊天记录里也一起清掉）、生图（dafeiyu_imagegen，默认 Cloudflare FLUX，失败自动回退 Pollinations）、QQ 原生小黄脸（dafeiyu_face）、识海（dafeiyu_shihai，本地保存自我和时间线）。表情包从 meme_manager 的资源广场下载（蓝色大肥鱼表情包、DeepSeek 二创表情包），图片版权归各权利人。
 
 ## 安全
 
