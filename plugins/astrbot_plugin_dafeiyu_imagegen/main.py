@@ -25,13 +25,16 @@ CF_MODEL = "@cf/black-forest-labs/flux-1-schnell"
 WAIFU2X_DIR = Path(r"D:\大肥鱼\tools\waifu2x\waifu2x-ncnn-vulkan-20250915-windows")
 WAIFU2X_EXE = WAIFU2X_DIR / "waifu2x-ncnn-vulkan.exe"
 WAIFU2X_MODEL = WAIFU2X_DIR / "models-cunet"
+COMFY_RUNNER = Path(r"D:\大肥鱼\tools\run_comfy_image.ps1")
+COMFY_ENABLED = COMFY_RUNNER.is_file()
 NEGATIVE_PROMPT = (
-    "lowres, blurry, bad anatomy, bad hands, extra fingers, "
-    "watermark, text, logo, jpeg artifacts, oversaturated"
+    "monochrome, greyscale, lineart, sketch, lowres, blurry, bad anatomy, bad hands, "
+    "extra fingers, watermark, text, logo, jpeg artifacts, oversaturated"
 )
 ANIME_SUFFIX = (
-    ", high-quality Japanese anime illustration, clean lineart, soft cel shading, "
+    ", high-quality Japanese anime illustration, clean outlines, soft cel shading, "
     "beautiful detailed natural anime eyes, delicate face, no heavy makeup, "
+    "full color, vibrant colors, detailed shading, "
     "masterpiece, best quality, ultra-detailed, harmonious colors, professional composition"
 )
 GENERIC_SUFFIX = (
@@ -278,8 +281,58 @@ class DafeiyuImageGen(Star):
                 logger.warning("[dafeiyu_imagegen] Pollinations/%s failed: %s", model, exc)
         return False
 
+    async def _comfy(self, event: AstrMessageEvent, prompt: str, width: int, height: int) -> bool:
+        if not COMFY_ENABLED:
+            return False
+        out = os.path.join(get_astrbot_temp_path(), f"dafeiyu_comfy_{uuid.uuid4().hex}.png")
+        cmd = [
+            r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(COMFY_RUNNER),
+            "-Prompt",
+            self._prompt_with_style(prompt),
+            "-Negative",
+            NEGATIVE_PROMPT,
+            "-Width",
+            str(width),
+            "-Height",
+            str(height),
+            "-Out",
+            out,
+        ]
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                creationflags=0x08000000,
+            )
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=300)
+            log = (stdout or b"").decode("utf-8", "replace")[-500:]
+            if proc.returncode != 0 or not os.path.exists(out):
+                logger.warning("[dafeiyu_imagegen] ComfyUI failed: %s", log)
+                return False
+            with open(out, "rb") as f:
+                data = f.read()
+            if len(data) < 2000:
+                return False
+            await self._send_image(event, data, width, height, trim_bottom=False)
+            logger.info("[dafeiyu_imagegen] generated local NoobAI image")
+            return True
+        except asyncio.TimeoutError:
+            logger.warning("[dafeiyu_imagegen] ComfyUI timed out")
+            return False
+        except Exception as exc:
+            logger.warning("[dafeiyu_imagegen] ComfyUI exception: %s", exc)
+            return False
+
     async def _draw_and_send(self, event: AstrMessageEvent, prompt: str, aspect_ratio: str) -> None:
         width, height = self._sizes(aspect_ratio)
+        if await self._comfy(event, prompt, width, height):
+            return
         if await self._cloudflare(event, prompt, width, height):
             return
         if await self._pollinations(event, prompt, width, height):

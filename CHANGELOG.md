@@ -12,6 +12,7 @@
 - 新增 `astrbot_plugin_dafeiyu_cover`：发音频/清唱说「翻唱」走 SoulX-SVC；本地歌曲库找歌 + iTunes 元数据查询，不自动下载版权歌曲
 - 翻唱支持带伴奏音频：先用 Mel-Band RoFormer 分离主唱，再做 SVC
 - 生图输出加 waifu2x 2x（1024 → 2048）和 Pollinations 负面提示词
+- 生图主接口改为本机 ComfyUI + NoobAI-XL（SDXL），生图时暂停 Breeze/SVS
 
 ## 2026-10-28
 

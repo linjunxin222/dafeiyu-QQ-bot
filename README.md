@@ -32,7 +32,7 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 - Breeze TTS 2 本机语音：标准普通话、十六七岁少女音，音色 `dafeiyu`，约十条回复一条语音，每次只发一条完整语音
 - 唱歌：本机 SoulX-Singer 按谱唱，支持《小星星》《两只老虎》《生日快乐》，约 10–30 秒
 - 翻唱：发音频（带伴奏会自动人声分离，清唱更稳）并说「翻唱」，用本机 SoulX-SVC 转成大肥鱼音色；本地歌曲库支持找歌
-- 生图：Cloudflare Workers AI `FLUX.1 schnell` 为主，失败自动回退 Pollinations；默认二次元、8 步、1024px，生成后用 waifu2x 2x 放大到 2048px
+- 生图：本机 ComfyUI + NoobAI-XL（SDXL）生成 1024px，waifu2x 2x 到 2048px；默认二次元、负面词过滤线稿/黑白/水印；生图时暂停语音服务
 - 表情包、QQ 空间、个性签名工具
 - QQ 原生小黄脸：`send_qq_face`；本地梗图：`search_memes`
 - 图片识别最长边 2048px；视频消息抽取最多 6 帧关键画面后交给视觉模型
@@ -49,7 +49,7 @@ flowchart LR
     A --> O[Ollama / bge-m3]
     A --> B[Breeze TTS 2]
     A --> S[SoulX-Singer 唱歌]
-    A --> C[Cloudflare FLUX]
+    A --> C[ComfyUI + NoobAI-XL]
     C -. 失败回退 .-> P[Pollinations]
     A --> M[长期记忆 / 表情包 / QQ 空间]
 ```
@@ -118,9 +118,14 @@ python tools/check_repo.py
 - 正常聊天里说「画一张……」「给我生一张图」，模型调用 `generate_image`
 - 兜底命令：`/生图 一只蓝鲸女仆`
 
-Cloudflare Workers AI 的免费额度是每天 10,000 Neurons；失败或没配置凭证时会自动回退 Pollinations。免费 FLUX 偶尔会有手部、眼睛小瑕疵，要商用稳定度需要换更强的付费模型。
+默认走本机 ComfyUI + NoobAI-XL（SDXL）：
 
-生图凭证放在 `图片API.txt`，已被 `.gitignore` 排除，**不要提交**：
+- 1024px 生成，waifu2x 2x 到 2048px
+- 生图时会暂停 Breeze/SVS 约一分钟，完成后自动恢复
+- 需要 ComfyUI、`NoobAI-XL-v1.1.safetensors`（约 7.1GB）和 waifu2x
+- 辅助脚本：`tools/comfy_generate.py`、`tools/run_comfy_image.ps1`
+
+Cloudflare FLUX/Pollinations 仍作为备用；如果要用，凭证放在 `图片API.txt`，已被 `.gitignore` 排除，**不要提交**：
 
 ```text
 account_id=你的 Cloudflare Account ID
