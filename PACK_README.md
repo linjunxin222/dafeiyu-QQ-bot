@@ -72,7 +72,7 @@ Breeze 的模型只许研究和非商业使用：自己玩没问题，用它做�
 
 **两套表情包**：默认蓝色大肥鱼和 DeepSeek 二创两套一起用，发图时从两套里一起挑。只想用一套，把 `settings/pack.json` 里 `meme_packs` 那套的 `use` 改成 `false`，再导入一次。
 
-**语音太多或太少**：改 `settings/pack.json` 里 `voice` 的 `trigger_probability`。0.2 是大约五条一次语音，0.33 大约三条一次，1 是每条都发语音，0.1 是偶尔一次。
+**语音太多或太少**：改 `settings/pack.json` 里 `voice` 的 `trigger_probability`。当前是 0.1，大约十条回复一次；0.2 是大约五条一次，0.33 大约三条一次，1 是每条都发语音。
 
 **换个声音**：Edge 的声音在 `voice.edge.voice`，比如换成 `zh-CN-XiaoxiaoNeural`。用 MiMo 克隆音的话，把一段 5–10 秒、只有一个人说话的干净录音放进 `voice` 文件夹，重新导入时选 2。用豆包的话，声音是靠一句话描述出来的，改 `voice.doubao.persona`（比如「二十出头的女生，说话直爽利落」），重新导入时选 3。用 Breeze 的话，再双击一次 `做声音.bat` 就行。
 

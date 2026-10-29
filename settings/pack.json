@@ -147,7 +147,7 @@
     "embedding_dimensions": 1024
   },
   "voice": {
-    "trigger_probability": 0.2,
+    "trigger_probability": 0.1,
     "edge": {
       "id": "大肥鱼语音-Edge",
       "voice": "zh-CN-XiaoyiNeural",
