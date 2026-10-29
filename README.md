@@ -32,6 +32,7 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 - 唱歌：本机 SoulX-Singer 按谱唱，支持《小星星》《两只老虎》《生日快乐》，约 10–30 秒
 - 生图：Cloudflare Workers AI `FLUX.1 schnell` 为主，失败自动回退 Pollinations；默认二次元、8 步、1024px
 - 表情包、QQ 空间、个性签名工具
+- QQ 原生小黄脸：`send_qq_face`；本地梗图：`search_memes`
 - 图片识别最长边 2048px；视频消息抽取最多 6 帧关键画面后交给视觉模型
 - 启动器 + 看门狗：Breeze/SoulX/AstrBot/NapCat 并行启动，控制台隐藏，开机自启；启动互斥和单实例保护，异常退出自动恢复
 - 电脑/文件/终端/浏览器能力默认关闭
@@ -64,7 +65,8 @@ flowchart LR
 ├─ settings/pack.json           # 脱敏后的导入清单
 ├─ plugins/                      # 自定义 AstrBot 插件
 │  ├─ astrbot_plugin_dafeiyu_imagegen/  # 生图插件
-│  └─ astrbot_plugin_dafeiyu_sing/      # 唱歌插件
+│  ├─ astrbot_plugin_dafeiyu_sing/      # 唱歌插件
+│  └─ astrbot_plugin_dafeiyu_face/      # QQ 原生小黄脸
 ├─ tools/import_dafeiyu.py       # 配置导入工具
 ├─ tools/breeze/                 # Breeze 安装/做声音工具
 ├─ 回答.example.json             # 回答文件模板，复制为 回答.json 后填写

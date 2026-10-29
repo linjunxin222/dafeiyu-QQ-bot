@@ -5,6 +5,7 @@
 - 接入本机 SoulX-Singer 唱歌服务，支持三首儿歌，启动器/看门狗自动拉起
 - 记忆速度优化：召回 6 条、最近 3 条、上下文 70 条、反思 8 轮；保留全部记忆并启用主动记忆工具
 - 启动器合并 Breeze/SoulX/AstrBot/NapCat，并行启动、开机自启；增加启动互斥和 NapCat 单实例保护，修复重复实例互相顶号导致的频繁扫码
+- 新增 `astrbot_plugin_dafeiyu_face`：`send_qq_face` 发送 QQ 原生小黄脸，本地梗图继续走 `search_memes`
 
 ## 2026-10-28
 

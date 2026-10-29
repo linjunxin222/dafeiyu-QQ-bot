@@ -1,0 +1,8 @@
+name: astrbot_plugin_dafeiyu_face
+display_name: 大肥鱼QQ原生表情
+desc: 让大肥鱼可以发送 QQ 自带的小黄脸表情，而不是只发文字或本地表情包图片
+help: 跟她说「发个笑脸」「来个调皮」「委屈一下」「发个OK」；本地表情包仍然用 search_memes
+version: v0.1.0
+author: zexuan604
+support_platforms:
+  - aiocqhttp
