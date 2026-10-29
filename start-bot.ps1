@@ -33,7 +33,7 @@ function Test-QQConnection {
 
 function Start-Watchdog {
     $running = @(Get-CimInstance Win32_Process | Where-Object {
-        $_.CommandLine -match "watch-bot\.ps1"
+        $_.Name -eq "powershell.exe" -and $_.CommandLine -match "-File .*watch-bot\.ps1"
     })
     if ($running.Count -gt 0) { return }
     $psExe = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"

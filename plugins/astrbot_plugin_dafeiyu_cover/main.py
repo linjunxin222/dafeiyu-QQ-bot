@@ -64,7 +64,12 @@ class DafeiyuCover(Star):
         if local and os.path.isfile(local):
             return Path(local)
         if raw.startswith("file://"):
-            p = Path(raw[7:])
+            from urllib.parse import unquote, urlparse
+
+            path_text = unquote(urlparse(raw).path)
+            if re.match(r"^/[A-Za-z]:/", path_text):
+                path_text = path_text[1:]
+            p = Path(path_text)
             return p if p.is_file() else None
         if raw.startswith("base64://"):
             data = base64.b64decode(raw[9:])
