@@ -107,6 +107,48 @@ function Start-Breeze {
     }
 }
 
+function Test-Sing {
+    try {
+        $h = Invoke-RestMethod -Uri "http://127.0.0.1:18620/health" -TimeoutSec 4
+        return [bool]($h.ok -and ($h.backends -contains "soulx"))
+    } catch {
+        return $false
+    }
+}
+
+function Start-Sing {
+    $root = "D:\dafeiyu\sing"
+    $py = Join-Path $root "venv\Scripts\python.exe"
+    $serverScript = Join-Path $root "sing_server.py"
+    $model = Join-Path $root "models\SoulX-Singer\model.pt"
+    if (-not ((Test-Path -LiteralPath $py) -and (Test-Path -LiteralPath $serverScript) -and (Test-Path -LiteralPath $model))) { return }
+    if (Test-Sing) {
+        $script:singFailures = 0
+        return
+    }
+    $running = @(Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -eq "python.exe" -and $_.CommandLine -match "sing_server\.py"
+    })
+    if (-not $running) {
+        Start-Process -FilePath $py -ArgumentList @($serverScript, "--soulx", (Join-Path $root "SoulX-Singer"), "--model", $model) `
+            -WorkingDirectory $root -RedirectStandardOutput (Join-Path $logs "sing-server.out.log") `
+            -RedirectStandardError (Join-Path $logs "sing-server.err.log") -WindowStyle Hidden | Out-Null
+        Log-Message "watchdog started SoulX singing service"
+        $script:singFailures = 0
+        return
+    }
+    $script:singFailures++
+    if ($script:singFailures -ge 3) {
+        $running | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        Start-Sleep -Seconds 2
+        Start-Process -FilePath $py -ArgumentList @($serverScript, "--soulx", (Join-Path $root "SoulX-Singer"), "--model", $model) `
+            -WorkingDirectory $root -RedirectStandardOutput (Join-Path $logs "sing-server.out.log") `
+            -RedirectStandardError (Join-Path $logs "sing-server.err.log") -WindowStyle Hidden | Out-Null
+        Log-Message "watchdog restarted unresponsive SoulX singing service"
+        $script:singFailures = 0
+    }
+}
+
 $mutex = New-Object System.Threading.Mutex($false, "Local\dafeiyu_bot_watchdog")
 if (-not $mutex.WaitOne(0)) {
     exit
@@ -115,6 +157,7 @@ if (-not $mutex.WaitOne(0)) {
 Log-Message "watchdog started"
 $astrBotFailures = 0
 $breezeFailures = 0
+$singFailures = 0
 
 try {
     while ($true) {
@@ -147,6 +190,7 @@ try {
         }
 
         Start-Breeze
+        Start-Sing
 
         $ws = Get-NetTCPConnection -State Established -LocalPort 6219 -ErrorAction SilentlyContinue
         if (-not $ws) {

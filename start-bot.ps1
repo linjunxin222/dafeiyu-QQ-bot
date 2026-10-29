@@ -43,6 +43,25 @@ if (Test-Path -LiteralPath $breezeCmd) {
     }
 }
 
+$singRoot = "D:\dafeiyu\sing"
+$singPy = Join-Path $singRoot "venv\Scripts\python.exe"
+$singScript = Join-Path $singRoot "sing_server.py"
+$singModel = Join-Path $singRoot "models\SoulX-Singer\model.pt"
+if ((Test-Path -LiteralPath $singPy) -and (Test-Path -LiteralPath $singScript) -and (Test-Path -LiteralPath $singModel)) {
+    try {
+        $singHealth = Invoke-RestMethod -Uri "http://127.0.0.1:18620/health" -TimeoutSec 3
+        $singOk = [bool]($singHealth.ok -and ($singHealth.backends -contains "soulx"))
+    } catch {
+        $singOk = $false
+    }
+    if (-not $singOk) {
+        Start-Process -FilePath $singPy -ArgumentList @($singScript, "--soulx", (Join-Path $singRoot "SoulX-Singer"), "--model", $singModel) `
+            -WorkingDirectory $singRoot -RedirectStandardOutput (Join-Path $logs "sing-server.out.log") `
+            -RedirectStandardError (Join-Path $logs "sing-server.err.log") -WindowStyle Hidden | Out-Null
+        Log-Message "SoulX singing service starting..."
+    }
+}
+
 $httpOk = Test-AstrBotHttp
 if (-not $httpOk) {
     $running = Get-CimInstance Win32_Process | Where-Object {

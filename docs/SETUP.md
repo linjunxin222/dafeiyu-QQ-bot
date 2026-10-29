@@ -50,7 +50,19 @@ deepseek-key.txt
 
 这些文件已被 `.gitignore` 排除。
 
-## 5. 导入配置
+## 5. 可选：本机唱歌
+
+唱歌默认用 SoulX-Singer，在本机显卡上按谱唱，不花云端费用：
+
+- 需要 NVIDIA 显卡，显存 6 GB 以上；RTX 50 系使用 CUDA 12.8 / torch 2.7.1
+- 模型约 2.8 GB，独立环境约 5 GB
+- 在 `plugins/astrbot_plugin_dafeiyu_sing/sing_server` 里运行 `setup_windows.ps1`
+- 启动 `start_sing_server.bat`，看到 `http://127.0.0.1:18620` 即可
+- 启动器和看门狗会自动拉起这个服务
+
+没有本地唱歌服务时，插件会提示“嗓子哑了”，不会影响普通语音。
+
+## 6. 导入配置
 
 ```powershell
 Copy-Item .\回答.example.json .\回答.json
@@ -60,7 +72,7 @@ python .\tools\import_dafeiyu.py
 
 导入工具会通过 AstrBot 后台 API 写入人格、插件、记忆和语音配置。`回答.example.json` 默认 `voice` 是 `4`，也就是本机 Breeze；要先用 `PACK_README.md` 的「本机语音 Breeze」装好并做好 `dafeiyu` 音色。不要在没有确认的情况下重跑导入，否则可能覆盖本机配置。
 
-## 6. 启动
+## 7. 启动
 
 双击 `启动机器人.bat`，或运行：
 
@@ -70,7 +82,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-bot.ps1
 
 如果 NapCat 登录态失效，启动器会打开 `qr.html` 对应的扫码页。
 
-## 7. 验证
+## 8. 验证
 
 - `http://127.0.0.1:6218/` 返回 200
 - 本机 6219 端口有已建立的 WebSocket 连接

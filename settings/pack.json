@@ -60,14 +60,8 @@
       "what": "长期记忆，需要先选一种记忆方式",
       "config": {
         "provider_settings.llm_provider_id": "{对话模型}",
-        "session_manager.context_window_size": 100,
-        "reflection_engine.summary_trigger_rounds": 6,
-        "session_manager.max_messages_per_session": 5000,
-        "recall_engine.top_k": 10,
-        "recall_engine.recent_memory_count": 5,
-        "recall_engine.recent_memory_max_age_hours": 8760,
-        "importance_decay.decay_rate": 0,
-        "forgetting_agent.auto_cleanup_enabled": false
+        "session_manager.context_window_size": 50,
+        "reflection_engine.summary_trigger_rounds": 10
       }
     },
     {
@@ -188,6 +182,6 @@
   },
   "sing": {
     "说明": "唱歌插件 astrbot_plugin_dafeiyu_sing：语音选 3（豆包）时导入工具才装。backend 填 doubao 就用发语音那套豆包凭证在云端唱，不用另开服务；填 soulx 改用本地 SoulX-Singer（要 N 卡，还要先按插件 README 开唱歌服务）",
-    "backend": "doubao"
+    "backend": "soulx"
   }
 }

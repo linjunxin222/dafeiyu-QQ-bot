@@ -29,6 +29,7 @@ AstrBot + NapCat + DeepSeek 的 Windows QQ 机器人配置与脚本。
 - QQ 私聊，只允许指定主人
 - 长期记忆（本机 Ollama + bge-m3）：召回 10 条、最近 5 条，关闭自动衰减和自动清理
 - Breeze TTS 2 本机语音：标准普通话、十六七岁少女音，音色 `dafeiyu`，约五条回复一条语音，每次只发一条完整语音
+- 唱歌：本机 SoulX-Singer 按谱唱，支持《小星星》《两只老虎》《生日快乐》，约 10–30 秒
 - 生图：Cloudflare Workers AI `FLUX.1 schnell` 为主，失败自动回退 Pollinations；默认二次元、8 步、1024px
 - 表情包、QQ 空间、个性签名工具
 - 图片识别最长边 2048px；视频消息抽取最多 6 帧关键画面后交给视觉模型
@@ -44,6 +45,7 @@ flowchart LR
     A --> D[DeepSeek]
     A --> O[Ollama / bge-m3]
     A --> B[Breeze TTS 2]
+    A --> S[SoulX-Singer 唱歌]
     A --> C[Cloudflare FLUX]
     C -. 失败回退 .-> P[Pollinations]
     A --> M[长期记忆 / 表情包 / QQ 空间]
@@ -53,8 +55,8 @@ flowchart LR
 
 ```text
 .
-├─ start-bot.ps1                 # 后台启动 Breeze + AstrBot + NapCat，并启动看门狗
-├─ watch-bot.ps1                 # 看门狗，自动恢复 AstrBot / NapCat / Ollama / Breeze
+├─ start-bot.ps1                 # 后台启动 Breeze/SoulX + AstrBot + NapCat，并启动看门狗
+├─ watch-bot.ps1                 # 看门狗，自动恢复 AstrBot / NapCat / Ollama / Breeze / SoulX
 ├─ 启动机器人.bat                # 调用 start-bot.ps1 的入口
 ├─ 使用说明.txt
 ├─ qr.html                       # 本机 QQ 扫码登录页
@@ -96,11 +98,12 @@ python tools/check_repo.py
 3. 从同版本 QQNT 安装目录复制 `QQEX.exe` 到 NapCat Shell 根目录。
 4. 安装 Ollama，拉取 `bge-m3`，设置 `OLLAMA_MODELS` 和 CPU 模式。
 5. 安装 Breeze TTS 2（见 `PACK_README.md` 的「本机语音 Breeze」），做好音色 `dafeiyu`。
-6. 在本机创建密钥文件，不要把密钥提交到仓库。
-7. 复制 `回答.example.json` 为 `回答.json`，默认 `voice` 是 `4`（Breeze）；填写本机文件路径。
-8. 运行 `python tools/import_dafeiyu.py`。
-9. 可选：复制 `图片API.txt.example` 为 `图片API.txt`，填 Cloudflare Account ID 和 Workers AI Token。
-10. 双击 `启动机器人.bat`，按提示扫码登录 QQ。
+6. 可选：安装 SoulX-Singer 唱歌服务（见 `plugins/astrbot_plugin_dafeiyu_sing/README.md`，N 卡 6 GB 以上，模型约 2.8 GB）。
+7. 在本机创建密钥文件，不要把密钥提交到仓库。
+8. 复制 `回答.example.json` 为 `回答.json`，默认 `voice` 是 `4`（Breeze）；填写本机文件路径。
+9. 运行 `python tools/import_dafeiyu.py`。
+10. 可选：复制 `图片API.txt.example` 为 `图片API.txt`，填 Cloudflare Account ID 和 Workers AI Token。
+11. 双击 `启动机器人.bat`，按提示扫码登录 QQ。
 
 ## 生图
 
