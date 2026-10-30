@@ -95,6 +95,17 @@ python tools/check_repo.py
 
 它会检查 Python 语法、JSON、插件 metadata、是否误提交密钥/日志/音频/记忆库等。GitHub Actions 也会在 push 和 PR 时跑同样的检查。
 
+## 一键导入包
+
+不想手动复制配置，可以下载 GitHub Release 里的配置包：
+
+- `dafeiyu-config-pack-v1.0.0.zip`
+- 解压后双击 `安装大肥鱼.bat`
+- 按提示填 AstrBot 后台账号、密码、主人 QQ、记忆和语音选项
+- 前提仍然是先装好 AstrBot、NapCat 和 QQ，详见 `docs/SETUP.md` 和 `docs/ONE_CLICK.md`
+
+下载地址：<https://github.com/linjunxin222/dafeiyu-QQ-bot/releases/latest>
+
 ## 快速开始
 
 完整步骤见 [docs/SETUP.md](docs/SETUP.md)。最短流程：
