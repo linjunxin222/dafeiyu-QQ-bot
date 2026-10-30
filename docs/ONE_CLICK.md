@@ -55,7 +55,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\安装大肥鱼.ps1 -DryRu
 
 主包不含大模型和 RVC 声音模型。需要本机唱歌/翻唱时，另外下载：
 
-- `dafeiyu-rvc-model-v1.0.0.zip`：RVC 翻唱模型（约 170MB）
+- `dafeiyu-rvc-model-v1.1.0.zip`：RVC 翻唱模型（约 170MB）
 - Breeze：`装Breeze语音.bat` 自动下载
 - SoulX：按 `plugins/astrbot_plugin_dafeiyu_sing/README.md` 安装
 - ComfyUI/NoobAI：按 `plugins/astrbot_plugin_dafeiyu_imagegen/README.md`
