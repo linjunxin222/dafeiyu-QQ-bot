@@ -32,6 +32,11 @@ SEP_CONFIG = Path(
     r"D:\dafeiyu\sing\models\SoulX-Singer-Preprocess\mel-band-roformer-karaoke"
     r"\config_karaoke_becruily.yaml"
 )
+RVC_ROOT = Path(r"D:\大肥鱼\Applio")
+RVC_ENV = RVC_ROOT / "env" / "Scripts" / "python.exe"
+RVC_INFER = RVC_ROOT / "rvc" / "infer" / "infer.py"
+RVC_MODEL_DIR = Path(r"D:\rvc-model")
+RVC_PTH = RVC_MODEL_DIR / "dafeiyu.pth"
 DEFAULT_OUT = Path(r"D:\dafeiyu\sing\out\cover-last.wav")
 DEFAULT_MAX_SECONDS = 60.0
 
@@ -73,6 +78,41 @@ def to_wav(source: Path, target: Path, max_seconds: float = DEFAULT_MAX_SECONDS)
     proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0 or not target.exists():
         raise RuntimeError(f"音频转码失败: {(proc.stderr or '')[-500:]}")
+
+
+def rvc_convert(source_wav: Path, out_wav: Path) -> None:
+    """Convert a dry vocal with the trained dafeiyu RVC model."""
+    if not RVC_PTH.exists():
+        raise RuntimeError(f"RVC 模型不存在: {RVC_PTH}")
+    if not RVC_ENV.exists() or not RVC_INFER.exists():
+        raise RuntimeError("Applio RVC 环境不完整")
+    indices = sorted(RVC_MODEL_DIR.glob("*.index"))
+    index = str(indices[-1]) if indices else ""
+    cmd = [
+        str(RVC_ENV),
+        str(RVC_INFER),
+        "--input-path", str(source_wav),
+        "--output-path", str(out_wav),
+        "--pth-path", str(RVC_PTH),
+        "--index-path", index,
+        "--f0-method", "rmvpe",
+        "--index-rate", "0.75",
+        "--protect", "0.5",
+        "--resample-sr", "40000",
+        "--export-format", "WAV",
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(RVC_ROOT),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=300,
+    )
+    if proc.returncode != 0 or not out_wav.exists():
+        raise RuntimeError(f"RVC 转换失败: {(proc.stderr or proc.stdout or '')[-800:]}")
+    print(f"OK RVC converted {source_wav.name} -> {out_wav.name}")
 
 
 def separate_vocals(mix_wav: Path, vocal_wav: Path, inst_wav: Path):
@@ -212,54 +252,51 @@ def main():
         else:
             shutil.copy2(raw_wav, target_wav)
 
-        frames = f0_for(target_wav, target_f0, args.max_seconds)
-        prompt_f0 = PROMPT_F0
-        if not prompt_f0.exists():
-            prompt_f0 = td / "prompt_f0.npy"
-            f0_for(PROMPT_WAV, prompt_f0)
+        if RVC_PTH.exists():
+            generated = td / "generated.wav"
+            rvc_convert(target_wav, generated)
+            frames = None
+        else:
+            frames = f0_for(target_wav, target_f0, args.max_seconds)
+            prompt_f0 = PROMPT_F0
+            if not prompt_f0.exists():
+                prompt_f0 = td / "prompt_f0.npy"
+                f0_for(PROMPT_WAV, prompt_f0)
 
-        config = load_config(str(ROOT / "soulxsinger" / "config" / "soulxsinger.yaml"))
-        model = build_model(
-            model_path=str(MODEL),
-            config=config,
-            device="cuda",
-            use_fp16=True,
-        )
-        run_args = SimpleNamespace(
-            device="cuda",
-            model_path=str(MODEL),
-            config=str(ROOT / "soulxsinger" / "config" / "soulxsinger.yaml"),
-            prompt_wav_path=str(PROMPT_WAV),
-            target_wav_path=str(target_wav),
-            prompt_f0_path=str(prompt_f0),
-            target_f0_path=str(target_f0),
-            save_dir=str(save_dir),
-            auto_shift=bool(args.auto_shift),
-            pitch_shift=0,
-            n_steps=max(8, int(args.n_steps)),
-            cfg=3.0,
-            use_fp16=True,
-        )
-        process(run_args, config, model)
-        generated = save_dir / "generated.wav"
-        if not generated.exists():
-            raise SystemExit("SVC 没有生成音频")
+            config = load_config(str(ROOT / "soulxsinger" / "config" / "soulxsinger.yaml"))
+            model = build_model(
+                model_path=str(MODEL),
+                config=config,
+                device="cuda",
+                use_fp16=True,
+            )
+            run_args = SimpleNamespace(
+                device="cuda",
+                model_path=str(MODEL),
+                config=str(ROOT / "soulxsinger" / "config" / "soulxsinger.yaml"),
+                prompt_wav_path=str(PROMPT_WAV),
+                target_wav_path=str(target_wav),
+                prompt_f0_path=str(prompt_f0),
+                target_f0_path=str(target_f0),
+                save_dir=str(save_dir),
+                auto_shift=bool(args.auto_shift),
+                pitch_shift=0,
+                n_steps=max(8, int(args.n_steps)),
+                cfg=3.0,
+                use_fp16=True,
+            )
+            process(run_args, config, model)
+            generated = save_dir / "generated.wav"
+            if not generated.exists():
+                raise SystemExit("SVC 没有生成音频")
+
         if has_inst:
-            # auto_shift 会把整首歌移到 prompt 音域；伴奏是原调，必须把
-            # 生成人声移回原调，否则人声和伴奏会差几个半音。
-            shift = int(getattr(run_args, "pitch_shift", 0) or 0)
-            if shift:
-                y, sr = librosa.load(str(generated), sr=24000, mono=True)
-                y = librosa.effects.pitch_shift(y, sr=sr, n_steps=-shift)
-                aligned = td / "aligned.wav"
-                sf.write(str(aligned), y, sr)
-                generated = aligned
-                print(f"OK shifted vocal back by {-shift} semitones to original key")
+            # RVC/SVC 都跟原唱的音高；保持原调后直接和原伴奏混音。
             mix_with_inst(generated, inst_wav, out)
-            print("OK mixed SVC vocal with original accompaniment")
+            print("OK mixed converted vocal with original accompaniment")
         else:
             master_vocal(generated, out)
-            print("OK mastered SVC vocal (no accompaniment)")
+            print("OK mastered converted vocal (no accompaniment)")
         print(f"OK out={out} target_frames={frames} bytes={out.stat().st_size}")
 
 
