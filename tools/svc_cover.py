@@ -33,9 +33,10 @@ SEP_CONFIG = Path(
     r"\config_karaoke_becruily.yaml"
 )
 DEFAULT_OUT = Path(r"D:\dafeiyu\sing\out\cover-last.wav")
+DEFAULT_MAX_SECONDS = 60.0
 
 
-def f0_for(path: Path, out_npy: Path, max_seconds: float = 30.0):
+def f0_for(path: Path, out_npy: Path, max_seconds: float = DEFAULT_MAX_SECONDS):
     y, sr = librosa.load(str(path), sr=24000, mono=True, duration=max_seconds)
     if len(y) == 0:
         raise RuntimeError("目标音频为空")
@@ -52,7 +53,7 @@ def f0_for(path: Path, out_npy: Path, max_seconds: float = 30.0):
     return f0.shape
 
 
-def to_wav(source: Path, target: Path):
+def to_wav(source: Path, target: Path, max_seconds: float = DEFAULT_MAX_SECONDS):
     ffmpeg = shutil.which("ffmpeg") or "ffmpeg"
     cmd = [
         ffmpeg,
@@ -60,7 +61,7 @@ def to_wav(source: Path, target: Path):
         "-i",
         str(source),
         "-t",
-        "30",
+        str(max_seconds),
         "-ar",
         "24000",
         "-ac",
@@ -74,8 +75,8 @@ def to_wav(source: Path, target: Path):
         raise RuntimeError(f"音频转码失败: {(proc.stderr or '')[-500:]}")
 
 
-def separate_vocals(mix_wav: Path, vocal_wav: Path):
-    """Extract lead vocals from a full mix; frees the separator before SVC loads."""
+def separate_vocals(mix_wav: Path, vocal_wav: Path, inst_wav: Path):
+    """Extract lead vocals and accompaniment; frees the separator before SVC loads."""
     if not SEP_MODEL.exists() or not SEP_CONFIG.exists():
         raise RuntimeError("人声分离模型不存在")
     sys.path.insert(0, str(ROOT))
@@ -93,23 +94,79 @@ def separate_vocals(mix_wav: Path, vocal_wav: Path):
     )
     try:
         result = separator.process(str(mix_wav))
-        vocals = result.vocals
-        if getattr(vocals, "ndim", 0) == 2:
-            vocals = vocals.T
-        sf.write(str(vocal_wav), vocals, result.sample_rate)
+        for array, dest in (
+            (result.vocals, vocal_wav),
+            (result.accompaniment, inst_wav),
+        ):
+            if getattr(array, "ndim", 0) == 2:
+                array = array.T
+            sf.write(str(dest), array, result.sample_rate)
     finally:
         del separator
         gc.collect()
         torch.cuda.empty_cache()
     if not vocal_wav.exists():
         raise RuntimeError("人声分离没有输出")
+    if not inst_wav.exists():
+        raise RuntimeError("伴奏分离没有输出")
+    return result.sample_rate
+
+
+def _ffmpeg(inputs: list[str], filter_complex: str, out: Path):
+    ffmpeg = shutil.which("ffmpeg") or "ffmpeg"
+    cmd = [ffmpeg, "-y"]
+    for item in inputs:
+        cmd += ["-i", item]
+    cmd += [
+        "-filter_complex",
+        filter_complex,
+        "-map",
+        "[out]",
+        "-ar",
+        "44100",
+        "-ac",
+        "2",
+        str(out),
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.returncode != 0 or not out.exists():
+        raise RuntimeError(f"混音/后处理失败: {(proc.stderr or '')[-700:]}")
+
+
+def master_vocal(vocal_wav: Path, out: Path):
+    """EQ + compression + light space + loudness for a dry SVC vocal."""
+    flt = (
+        "[0:a]aresample=44100,highpass=f=70,"
+        "acompressor=threshold=-18dB:ratio=3:attack=10:release=180,"
+        "equalizer=f=2500:t=q:w=1.2:g=2,"
+        "equalizer=f=6500:t=q:w=1.2:g=1.2,"
+        "aecho=0.8:0.55:28:0.08,"
+        "loudnorm=I=-16:TP=-1.5:LRA=11[out]"
+    )
+    _ffmpeg([str(vocal_wav)], flt, out)
+
+
+def mix_with_inst(vocal_wav: Path, inst_wav: Path, out: Path):
+    """Blend the SVC vocal with the original accompaniment, then master."""
+    flt = (
+        "[0:a]aresample=44100,highpass=f=70,"
+        "acompressor=threshold=-18dB:ratio=3:attack=10:release=180,"
+        "equalizer=f=2500:t=q:w=1.2:g=2,"
+        "equalizer=f=6500:t=q:w=1.2:g=1.2,"
+        "aecho=0.8:0.55:28:0.08[voice];"
+        "[1:a]aresample=44100,highpass=f=35,volume=0.34[inst];"
+        "[voice][inst]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,"
+        "alimiter=limit=0.95,loudnorm=I=-16:TP=-1.5:LRA=11[out]"
+    )
+    _ffmpeg([str(vocal_wav), str(inst_wav)], flt, out)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", required=True)
     parser.add_argument("--out", default=str(DEFAULT_OUT))
-    parser.add_argument("--n-steps", type=int, default=16)
+    parser.add_argument("--n-steps", type=int, default=24)
+    parser.add_argument("--max-seconds", type=float, default=DEFAULT_MAX_SECONDS)
     parser.add_argument("--no-separate", action="store_true", help="目标已经是干净人声时跳过分离")
     args = parser.parse_args()
 
@@ -136,20 +193,24 @@ def main():
         target_wav = td / "target.wav"
         target_f0 = td / "target_f0.npy"
         save_dir = td / "save"
-        to_wav(target, raw_wav)
+        vocal_wav = td / "vocal.wav"
+        inst_wav = td / "inst.wav"
+        has_inst = False
+        to_wav(target, raw_wav, args.max_seconds)
 
         if not args.no_separate:
             try:
-                vocal_wav = td / "vocal.wav"
-                separate_vocals(raw_wav, vocal_wav)
-                to_wav(vocal_wav, target_wav)
+                separate_vocals(raw_wav, vocal_wav, inst_wav)
+                to_wav(vocal_wav, target_wav, args.max_seconds)
+                has_inst = True
+                print("OK separated vocal + accompaniment")
             except Exception as exc:
                 print(f"WARN 人声分离失败，改用原音轨: {exc}")
                 shutil.copy2(raw_wav, target_wav)
         else:
             shutil.copy2(raw_wav, target_wav)
 
-        frames = f0_for(target_wav, target_f0)
+        frames = f0_for(target_wav, target_f0, args.max_seconds)
         prompt_f0 = PROMPT_F0
         if not prompt_f0.exists():
             prompt_f0 = td / "prompt_f0.npy"
@@ -181,7 +242,22 @@ def main():
         generated = save_dir / "generated.wav"
         if not generated.exists():
             raise SystemExit("SVC 没有生成音频")
-        shutil.copy2(generated, out)
+        if has_inst:
+            # auto_shift 会把整首歌移到 prompt 音域；伴奏是原调，必须把
+            # 生成人声移回原调，否则人声和伴奏会差几个半音。
+            shift = int(getattr(run_args, "pitch_shift", 0) or 0)
+            if shift:
+                y, sr = librosa.load(str(generated), sr=24000, mono=True)
+                y = librosa.effects.pitch_shift(y, sr=sr, n_steps=-shift)
+                aligned = td / "aligned.wav"
+                sf.write(str(aligned), y, sr)
+                generated = aligned
+                print(f"OK shifted vocal back by {-shift} semitones to original key")
+            mix_with_inst(generated, inst_wav, out)
+            print("OK mixed SVC vocal with original accompaniment")
+        else:
+            master_vocal(generated, out)
+            print("OK mastered SVC vocal (no accompaniment)")
         print(f"OK out={out} target_frames={frames} bytes={out.stat().st_size}")
 
 
