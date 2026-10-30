@@ -94,8 +94,11 @@ def separate_vocals(mix_wav: Path, vocal_wav: Path, inst_wav: Path):
     )
     try:
         result = separator.process(str(mix_wav))
+        vocal_source = getattr(result, "vocals_dereverbed", None)
+        if vocal_source is None or getattr(vocal_source, "size", 0) == 0:
+            vocal_source = result.vocals
         for array, dest in (
-            (result.vocals, vocal_wav),
+            (vocal_source, vocal_wav),
             (result.accompaniment, inst_wav),
         ):
             if getattr(array, "ndim", 0) == 2:
@@ -137,10 +140,9 @@ def master_vocal(vocal_wav: Path, out: Path):
     """EQ + compression + light space + loudness for a dry SVC vocal."""
     flt = (
         "[0:a]aresample=44100,highpass=f=70,"
-        "acompressor=threshold=-18dB:ratio=3:attack=10:release=180,"
-        "equalizer=f=2500:t=q:w=1.2:g=2,"
-        "equalizer=f=6500:t=q:w=1.2:g=1.2,"
-        "aecho=0.8:0.55:28:0.08,"
+        "acompressor=threshold=-20dB:ratio=2.5:attack=12:release=180,"
+        "equalizer=f=2500:t=q:w=1.2:g=1,"
+        "equalizer=f=6500:t=q:w=1.2:g=1,"
         "loudnorm=I=-16:TP=-1.5:LRA=11[out]"
     )
     _ffmpeg([str(vocal_wav)], flt, out)
@@ -150,11 +152,10 @@ def mix_with_inst(vocal_wav: Path, inst_wav: Path, out: Path):
     """Blend the SVC vocal with the original accompaniment, then master."""
     flt = (
         "[0:a]aresample=44100,highpass=f=70,"
-        "acompressor=threshold=-18dB:ratio=3:attack=10:release=180,"
-        "equalizer=f=2500:t=q:w=1.2:g=2,"
-        "equalizer=f=6500:t=q:w=1.2:g=1.2,"
-        "aecho=0.8:0.55:28:0.08[voice];"
-        "[1:a]aresample=44100,highpass=f=35,volume=0.34[inst];"
+        "acompressor=threshold=-20dB:ratio=2.5:attack=12:release=180,"
+        "equalizer=f=2500:t=q:w=1.2:g=1,"
+        "equalizer=f=6500:t=q:w=1.2:g=1[voice];"
+        "[1:a]aresample=44100,highpass=f=35,volume=0.42[inst];"
         "[voice][inst]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,"
         "alimiter=limit=0.95,loudnorm=I=-16:TP=-1.5:LRA=11[out]"
     )
@@ -167,6 +168,7 @@ def main():
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     parser.add_argument("--n-steps", type=int, default=24)
     parser.add_argument("--max-seconds", type=float, default=DEFAULT_MAX_SECONDS)
+    parser.add_argument("--auto-shift", action="store_true", help="自动移到 prompt 音域；默认保持原调")
     parser.add_argument("--no-separate", action="store_true", help="目标已经是干净人声时跳过分离")
     args = parser.parse_args()
 
@@ -232,7 +234,7 @@ def main():
             prompt_f0_path=str(prompt_f0),
             target_f0_path=str(target_f0),
             save_dir=str(save_dir),
-            auto_shift=True,
+            auto_shift=bool(args.auto_shift),
             pitch_shift=0,
             n_steps=max(8, int(args.n_steps)),
             cfg=3.0,
