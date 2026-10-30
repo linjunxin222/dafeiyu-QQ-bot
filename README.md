@@ -106,6 +106,8 @@ python tools/check_repo.py
 
 下载地址：<https://github.com/linjunxin222/dafeiyu-QQ-bot/releases/latest>
 
+如果想让对方的 DeepSeek/AI 助手代装，复制 [docs/AI_INSTALL_PROMPT.md](docs/AI_INSTALL_PROMPT.md) 里的整段指令发过去。
+
 ## 快速开始
 
 完整步骤见 [docs/SETUP.md](docs/SETUP.md)。最短流程：
