@@ -1,0 +1,35 @@
+﻿diff --git "a/D:\\\345\244\247\350\202\245\351\261\274\\backups\\aiocqhttp_message_event.before-throttle.py" "b/D:\\\345\244\247\350\202\245\351\261\274\\AstrBot\\app\\astrbot\\core\\platform\\sources\\aiocqhttp\\aiocqhttp_message_event.py"
+index 8e2b008..f47ea14 100644
+--- "a/D:\\\345\244\247\350\202\245\351\261\274\\backups\\aiocqhttp_message_event.before-throttle.py"
++++ "b/D:\\\345\244\247\350\202\245\351\261\274\\AstrBot\\app\\astrbot\\core\\platform\\sources\\aiocqhttp\\aiocqhttp_message_event.py"
+@@ -1,7 +1,22 @@
+ import asyncio
+ import re
++import time
+ from collections.abc import AsyncGenerator
+ 
++# 全局发送节流：连续回复多条时拉开间隔，降低 QQ 风控/禁言概率。
++_SEND_LOCK = asyncio.Lock()
++_LAST_SEND_TS = 0.0
++_MIN_SEND_INTERVAL = 1.2
++
++
++async def _wait_send_slot() -> None:
++    global _LAST_SEND_TS
++    async with _SEND_LOCK:
++        wait = _MIN_SEND_INTERVAL - (time.monotonic() - _LAST_SEND_TS)
++        if wait > 0:
++            await asyncio.sleep(wait)
++        _LAST_SEND_TS = time.monotonic()
++
+ from aiocqhttp import CQHttp, Event
+ 
+ from astrbot.api import logger
+@@ -142,6 +157,7 @@ class AiocqhttpMessageEvent(AstrMessageEvent):
+             session_id (str | None, optional): 会话 ID（群号或 QQ 号
+ 
+         """
++        await _wait_send_slot()
+         # 转发消息、文件消息不能和普通消息混在一起发送
+         send_one_by_one = any(
+             isinstance(seg, Node | Nodes | File) for seg in message_chain.chain
