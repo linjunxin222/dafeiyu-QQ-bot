@@ -3,6 +3,7 @@
 用法：
 - 发一段带伴奏的整首或清唱，配一句“翻唱”，她用 SoulX-SVC 跟着原唱的音高/旋律
   转成大肥鱼音色；默认保持原调、和原伴奏混音，只做轻量母带处理。
+- 发音频时写“存歌 歌名”，会存进本地歌曲库，之后说“唱 歌名”即可直接翻唱。
 - “找歌 歌名”：先找本地歌曲库，再查 iTunes 元数据（只查信息，不下载版权歌曲）。
 - “唱 歌名”：只从本地歌曲库找，找到就翻唱。
 
@@ -15,6 +16,7 @@ import asyncio
 import base64
 import os
 import re
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -33,6 +35,7 @@ OUT = Path(r"D:\dafeiyu\sing\out")
 RUNNER = Path(r"D:\大肥鱼\tools\run_svc_cover.ps1")
 AUDIO_EXT = {".wav", ".mp3", ".flac", ".m4a", ".aac", ".ogg", ".opus", ".amr", ".silk"}
 KEYWORDS = ("翻唱", "cover", "唱这首", "唱一下这首")
+SAVE_KEYWORDS = ("存歌", "入库", "保存歌曲")
 
 
 class DafeiyuCover(Star):
@@ -133,6 +136,21 @@ class DafeiyuCover(Star):
     async def _reply(self, event: AstrMessageEvent, text: str):
         await event.send(MessageChain([Comp.Plain(text=text)]))
 
+    async def _save_song(self, event: AstrMessageEvent, target: Path, title: str):
+        title = (title or "").strip()
+        if not title:
+            await self._reply(event, "要存哪首？发音频时写「存歌 歌名」，比如「存歌 雨爱」。")
+            return
+        safe = re.sub(r'[\\/:*?"<>|]', "_", title).strip()[:80] or "未命名"
+        suffix = target.suffix.lower()
+        if suffix not in AUDIO_EXT:
+            suffix = ".wav"
+        dest = LIBRARY / f"{safe}{suffix}"
+        if dest.exists():
+            dest = LIBRARY / f"{safe}-{int(time.time())}{suffix}"
+        shutil.copy2(target, dest)
+        await self._reply(event, f"存好了：{dest.stem}。以后说「唱 {safe}」就能直接翻唱。")
+
     async def _cover(self, event: AstrMessageEvent, target: Path):
         if self._lock.locked():
             await self._reply(event, "上一首还在开嗓，等我唱完这首。")
@@ -181,6 +199,18 @@ class DafeiyuCover(Star):
             return
         text = (event.message_str or "").strip()
         audio = self._audio_components(event)
+
+        if audio and text.startswith(SAVE_KEYWORDS):
+            event.stop_event()
+            target = await self._download_attachment(audio[0])
+            if not target:
+                await self._reply(event, "音频没下载下来，换一个文件再存。")
+                return
+            title = re.sub(r"^(存歌|入库|保存歌曲)\s*", "", text).strip()
+            if not title:
+                title = target.stem
+            await self._save_song(event, target, title)
+            return
 
         if audio and any(k in text.lower() for k in KEYWORDS):
             event.stop_event()
