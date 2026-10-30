@@ -58,11 +58,10 @@ function Stop-AstrBot {
 }
 
 function Start-NapCat {
-    $dir = Join-Path $base "NapCat\NapCat.52230.Shell"
-    $versionDir = Get-ChildItem -LiteralPath (Join-Path $dir "versions") -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
-    $quickAccount = if ($versionDir) {
-        Get-ChildItem -LiteralPath (Join-Path $versionDir.FullName "resources\app\napcat\config") -File -Filter "onebot11_*.json" -ErrorAction SilentlyContinue | Select-Object -First 1
-    }
+    $dir = Get-ChildItem -LiteralPath (Join-Path $base "NapCat") -Recurse -File -Filter "NapCatWinBootMain.exe" -ErrorAction SilentlyContinue |
+        Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+    if (-not $dir) { Log-Message "watchdog: NapCat not installed"; return }
+    $quickAccount = Get-ChildItem -LiteralPath $dir -Recurse -File -Filter "onebot11_*.json" -ErrorAction SilentlyContinue | Select-Object -First 1
     $quickLogin = if ($quickAccount) { $quickAccount.BaseName -replace '^onebot11_', '' } else { "" }
     if ($quickLogin) {
         Start-Process -FilePath (Join-Path $dir "NapCatWinBootMain.exe") -ArgumentList @($quickLogin) `

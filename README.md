@@ -108,6 +108,8 @@ python tools/check_repo.py
 
 如果想让对方的 DeepSeek/AI 助手代装，复制 [docs/AI_INSTALL_PROMPT.md](docs/AI_INSTALL_PROMPT.md) 里的整段指令发过去。
 
+全自动安装器（Beta）：解压后双击 安装全自动.bat，会自动装 Python/AstrBot、下载 NapCat、导入配置；QQ 扫码和 DeepSeek Key 仍需人工。见 [docs/FULL_INSTALL.md](docs/FULL_INSTALL.md)。
+
 ## 快速开始
 
 完整步骤见 [docs/SETUP.md](docs/SETUP.md)。最短流程：

@@ -128,11 +128,12 @@ if ($napcatRunning.Count -gt 1) {
 $ws = Test-QQConnection
 if (-not $ws) {
     if ($napcatRunning.Count -eq 0) {
-        $napcatDir = Join-Path $base "NapCat\NapCat.52230.Shell"
-        $versionDir = Get-ChildItem -LiteralPath (Join-Path $napcatDir "versions") -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
-        $quickAccount = if ($versionDir) {
-            Get-ChildItem -LiteralPath (Join-Path $versionDir.FullName "resources\app\napcat\config") -File -Filter "onebot11_*.json" -ErrorAction SilentlyContinue | Select-Object -First 1
-        }
+        $napcatDir = Get-ChildItem -LiteralPath (Join-Path $base "NapCat") -Recurse -File -Filter "NapCatWinBootMain.exe" -ErrorAction SilentlyContinue |
+            Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+        if (-not $napcatDir) {
+            Log-Message "NapCat not installed yet; skipping NapCat start."
+        } else {
+        $quickAccount = Get-ChildItem -LiteralPath $napcatDir -Recurse -File -Filter "onebot11_*.json" -ErrorAction SilentlyContinue | Select-Object -First 1
         $quickLogin = if ($quickAccount) { $quickAccount.BaseName -replace '^onebot11_', '' } else { "" }
         if ($quickLogin) {
             Start-Process -FilePath (Join-Path $napcatDir "NapCatWinBootMain.exe") -ArgumentList @($quickLogin) `
@@ -142,6 +143,7 @@ if (-not $ws) {
             Start-Process -FilePath (Join-Path $napcatDir "NapCatWinBootMain.exe") `
                 -WorkingDirectory $napcatDir -WindowStyle Hidden | Out-Null
             Log-Message "NapCat starting; no saved account, QR may be required."
+        }
         }
     } else {
         Log-Message "NapCat process exists, waiting..."
