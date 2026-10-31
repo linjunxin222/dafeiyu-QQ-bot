@@ -11,6 +11,18 @@ if (Test-Path -LiteralPath $logFile) {
     }
 }
 
+function Find-NapCatDir {
+    $root = Join-Path $PSScriptRoot "NapCat"
+    $candidates = @(Get-ChildItem -LiteralPath $root -Recurse -File -Filter "NapCatWinBootMain.exe" -ErrorAction SilentlyContinue)
+    $withConfig = $candidates | Where-Object {
+        @(Get-ChildItem -LiteralPath $_.DirectoryName -Recurse -File -Filter "onebot11_*.json" -ErrorAction SilentlyContinue).Count -gt 0
+    } | Select-Object -First 1
+    if ($withConfig) { return $withConfig.DirectoryName }
+    $withVersions = $candidates | Where-Object { Test-Path (Join-Path $_.DirectoryName "versions") } | Select-Object -First 1
+    if ($withVersions) { return $withVersions.DirectoryName }
+    if ($candidates.Count -gt 0) { return $candidates[0].DirectoryName }
+    return $null
+}
 function Log-Message([string]$message) {
     Add-Content -LiteralPath $logFile -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $message" -Encoding UTF8
 }
@@ -58,8 +70,7 @@ function Stop-AstrBot {
 }
 
 function Start-NapCat {
-    $dir = Get-ChildItem -LiteralPath (Join-Path $base "NapCat") -Recurse -File -Filter "NapCatWinBootMain.exe" -ErrorAction SilentlyContinue |
-        Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+    $dir = Find-NapCatDir
     if (-not $dir) { Log-Message "watchdog: NapCat not installed"; return }
     $quickAccount = Get-ChildItem -LiteralPath $dir -Recurse -File -Filter "onebot11_*.json" -ErrorAction SilentlyContinue | Select-Object -First 1
     $quickLogin = if ($quickAccount) { $quickAccount.BaseName -replace '^onebot11_', '' } else { "" }

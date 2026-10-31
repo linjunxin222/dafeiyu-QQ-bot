@@ -12,6 +12,18 @@ try {
     exit
 }
 
+function Find-NapCatDir {
+    $root = Join-Path $PSScriptRoot "NapCat"
+    $candidates = @(Get-ChildItem -LiteralPath $root -Recurse -File -Filter "NapCatWinBootMain.exe" -ErrorAction SilentlyContinue)
+    $withConfig = $candidates | Where-Object {
+        @(Get-ChildItem -LiteralPath $_.DirectoryName -Recurse -File -Filter "onebot11_*.json" -ErrorAction SilentlyContinue).Count -gt 0
+    } | Select-Object -First 1
+    if ($withConfig) { return $withConfig.DirectoryName }
+    $withVersions = $candidates | Where-Object { Test-Path (Join-Path $_.DirectoryName "versions") } | Select-Object -First 1
+    if ($withVersions) { return $withVersions.DirectoryName }
+    if ($candidates.Count -gt 0) { return $candidates[0].DirectoryName }
+    return $null
+}
 function Log-Message([string]$message) {
     $line = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $message"
     Add-Content -LiteralPath $logFile -Value $line -Encoding UTF8
@@ -128,8 +140,7 @@ if ($napcatRunning.Count -gt 1) {
 $ws = Test-QQConnection
 if (-not $ws) {
     if ($napcatRunning.Count -eq 0) {
-        $napcatDir = Get-ChildItem -LiteralPath (Join-Path $base "NapCat") -Recurse -File -Filter "NapCatWinBootMain.exe" -ErrorAction SilentlyContinue |
-            Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+        $napcatDir = Find-NapCatDir
         if (-not $napcatDir) {
             Log-Message "NapCat not installed yet; skipping NapCat start."
         } else {
